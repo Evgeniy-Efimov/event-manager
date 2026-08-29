@@ -9,6 +9,7 @@ public static class ServiceExtensions
     public static IServiceCollection AddEventManager(this IServiceCollection services)
     {
         services.AddScoped<IRepository<Event>, InMemoryRepository<Event>>();
+        services.AddScoped<IEventService, EventService>();
 
         return services;
     }

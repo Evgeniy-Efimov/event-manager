@@ -1,0 +1,39 @@
+﻿using EventManager.Application.Mapping;
+using EventManager.Application.Models.DTO;
+using EventManager.Application.Models.Exceptions;
+using EventManager.Application.Services.Interfaces;
+using EventManager.Domain.Models;
+
+namespace EventManager.Application.Services;
+
+public class EventService(IRepository<Event> repository) : IEventService
+{
+    public EventResponseDto Get(Guid id)
+    {
+        return repository.Get(id)?.ToDto()
+            ?? throw new NotFoundException($"Event '{id}' not found");
+    }
+
+    public List<EventResponseDto> GetList()
+    {
+        return repository.GetList().ToDtoList();
+    }
+
+    public void Create(CreateEventDto eventDto)
+    {
+        repository.Create(eventDto.ToDomain());
+    }
+
+    public void Update(UpdateEventDto eventDto)
+    {
+        _ = repository.Get(eventDto.Id)
+            ?? throw new NotFoundException($"Event '{eventDto.Id}' not found");
+
+        repository.Update(eventDto.ToDomain());
+    }
+
+    public void Delete(Guid id)
+    {
+        repository.Delete(id);
+    }
+}

@@ -15,8 +15,8 @@ public static class EventMappingExtensions
             @event.EndAt);
     }
 
-    public static List<EventResponseDto> ToDtoList(this IEnumerable<Event> @events)
+    public static List<EventResponseDto> ToDtoList(this IEnumerable<Event> events)
     {
-        return @events.Select(e => e.ToDto()).ToList();
+        return events.Select(e => e.ToDto()).ToList();
     }
 }
