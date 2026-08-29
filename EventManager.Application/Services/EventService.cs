@@ -10,8 +10,7 @@ public class EventService(IRepository<Event> repository) : IEventService
 {
     public EventResponseDto Get(Guid id)
     {
-        return repository.Get(id)?.ToDto()
-            ?? throw new NotFoundException($"Event '{id}' not found");
+        return repository.Get(id)?.ToDto() ?? throw new NotFoundException($"Event '{id}' not found");
     }
 
     public List<EventResponseDto> GetList()
@@ -26,14 +25,13 @@ public class EventService(IRepository<Event> repository) : IEventService
 
     public void Update(UpdateEventDto eventDto)
     {
-        _ = repository.Get(eventDto.Id)
-            ?? throw new NotFoundException($"Event '{eventDto.Id}' not found");
-
+        _ = repository.Get(eventDto.Id) ?? throw new NotFoundException($"Event '{eventDto.Id}' not found");
         repository.Update(eventDto.ToDomain());
     }
 
     public void Delete(Guid id)
     {
+        _ = repository.Get(id) ?? throw new NotFoundException($"Event '{id}' not found");
         repository.Delete(id);
     }
 }
