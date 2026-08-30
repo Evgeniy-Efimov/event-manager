@@ -1,6 +1,6 @@
 ﻿namespace EventManager.Application.Models.DTO;
 
-public record EventResponseDto(
+public record EventDto(
     Guid Id,
     string Title,
     string? Description,

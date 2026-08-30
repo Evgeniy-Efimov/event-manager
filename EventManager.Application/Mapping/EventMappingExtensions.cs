@@ -5,9 +5,9 @@ namespace EventManager.Application.Mapping;
 
 public static class EventMappingExtensions
 {
-    public static EventResponseDto ToDto(this Event @event)
+    public static EventDto ToDto(this Event @event)
     {
-        return new EventResponseDto(
+        return new EventDto(
             @event.Id,
             @event.Title,
             @event.Description,
@@ -15,7 +15,7 @@ public static class EventMappingExtensions
             @event.EndAt);
     }
 
-    public static List<EventResponseDto> ToDtoList(this IEnumerable<Event> events)
+    public static List<EventDto> ToDtoList(this IEnumerable<Event> events)
     {
         return events.Select(e => e.ToDto()).ToList();
     }

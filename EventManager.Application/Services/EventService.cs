@@ -8,12 +8,12 @@ namespace EventManager.Application.Services;
 
 public class EventService(IRepository<Event> repository) : IEventService
 {
-    public EventResponseDto Get(Guid id)
+    public EventDto Get(Guid id)
     {
         return repository.Get(id)?.ToDto() ?? throw new NotFoundException($"Event '{id}' not found");
     }
 
-    public List<EventResponseDto> GetList()
+    public List<EventDto> GetList()
     {
         return repository.GetList().ToDtoList();
     }
