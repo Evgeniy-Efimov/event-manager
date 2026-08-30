@@ -1,4 +1,5 @@
 using EventManager.Application.Services;
+using EventManager.WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,8 +8,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader();
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
     options.AddPolicy("Production", policy =>
     {
@@ -25,6 +26,8 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseErrorHandling();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -36,6 +39,5 @@ else
     app.UseCors("Production");
 }
 
-app.UseAuthorization();
 app.MapControllers();
 app.Run();
