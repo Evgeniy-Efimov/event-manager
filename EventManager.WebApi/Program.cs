@@ -1,6 +1,6 @@
 using EventManager.Application.Services;
 using EventManager.WebApi.Configuration;
-using EventManager.WebApi.Extensions;
+using EventManager.WebApi.Handlers;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,10 +35,10 @@ builder.Services.AddEventManager();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options => options.IncludeXmlComments(Assembly.GetExecutingAssembly()));
+builder.Services.AddExceptionHandler<ExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
-
-app.UseErrorHandling();
 
 if (app.Environment.IsDevelopment())
 {
@@ -51,5 +51,6 @@ else
     app.UseCors("Production");
 }
 
+app.UseExceptionHandler();
 app.MapControllers();
 app.Run();
