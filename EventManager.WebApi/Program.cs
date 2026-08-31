@@ -1,6 +1,7 @@
 using EventManager.Application.Services;
 using EventManager.WebApi.Configuration;
 using EventManager.WebApi.Extensions;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +34,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddEventManager();
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => options.IncludeXmlComments(Assembly.GetExecutingAssembly()));
 
 var app = builder.Build();
 

@@ -25,7 +25,7 @@ public class EventsController(IEventService eventService) : ControllerBase
     /// <summary>
     /// Get list with all events
     /// </summary>
-    /// <returns>List<EventDto></returns>
+    /// <returns>List of EventDto</returns>
     [HttpGet]
     [Produces("application/json")]
     [ProducesResponseType(typeof(IEnumerable<EventDto>), StatusCodes.Status200OK)]
