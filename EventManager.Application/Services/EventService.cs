@@ -18,15 +18,21 @@ public class EventService(IRepository<Event> repository) : IEventService
         return repository.GetList().ToDtoList();
     }
 
-    public void Create(CreateEventDto eventDto)
+    public EventDto Create(CreateEventDto eventDto)
     {
-        repository.Create(eventDto.ToDomain());
+        var @event = eventDto.ToDomain();
+        repository.Create(@event);
+
+        return @event.ToDto();
     }
 
-    public void Update(UpdateEventDto eventDto)
+    public EventDto Update(UpdateEventDto eventDto)
     {
         _ = repository.Get(eventDto.Id) ?? throw new NotFoundException($"Event '{eventDto.Id}' not found");
-        repository.Update(eventDto.ToDomain());
+        var @event = eventDto.ToDomain();
+        repository.Update(@event);
+
+        return @event.ToDto();
     }
 
     public void Delete(Guid id)

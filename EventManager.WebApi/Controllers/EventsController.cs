@@ -38,7 +38,7 @@ public class EventsController(IEventService eventService) : ControllerBase
     /// Create event
     /// </summary>
     /// <param name="eventDto">CreateEventDto</param>
-    /// <returns>Empty response with status 201</returns>
+    /// <returns>Created event with status 201</returns>
     [HttpPost]
     [Consumes("application/json")]
     [Produces("application/json")]
@@ -46,23 +46,31 @@ public class EventsController(IEventService eventService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult Create([FromBody] CreateEventDto eventDto)
     {
-        eventService.Create(eventDto);
-        return Created();
+        var created = eventService.Create(eventDto);
+
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
     /// <summary>
     /// Update event
     /// </summary>
+    /// <param name="id">Event id</param>
     /// <param name="eventDto">UpdateEventDto</param>
     /// <returns>Empty response with status 204</returns>
-    [HttpPut]
+    [HttpPut("{id}")]
     [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult Update([FromBody] UpdateEventDto eventDto)
+    public IActionResult Update(Guid id, [FromBody] UpdateEventDto eventDto)
     {
+        if (id != eventDto.Id)
+        {
+            return BadRequest($"Event id mismatch, route: {id}, DTO: {eventDto.Id}");
+        }
+
         eventService.Update(eventDto);
+
         return NoContent();
     }
 
@@ -77,6 +85,7 @@ public class EventsController(IEventService eventService) : ControllerBase
     public IActionResult Delete(Guid id)
     {
         eventService.Delete(id);
+
         return NoContent();
     }
 }

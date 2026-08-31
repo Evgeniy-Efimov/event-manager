@@ -6,7 +6,7 @@ public interface IEventService
 {
     EventDto Get(Guid id);
     List<EventDto> GetList();
-    void Create(CreateEventDto eventDto);
-    void Update(UpdateEventDto eventDto);
+    EventDto Create(CreateEventDto eventDto);
+    EventDto Update(UpdateEventDto eventDto);
     void Delete(Guid id);
 }
