@@ -1,4 +1,5 @@
 using EventManager.Application.Services;
+using EventManager.WebApi.Configuration;
 using EventManager.WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,7 @@ if (builder.Environment.IsDevelopment())
     });
 }
 
+var corsSettings = builder.Configuration.GetSection(CorsSettings.SectionName).Get<CorsSettings>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -22,9 +24,9 @@ builder.Services.AddCors(options =>
     });
     options.AddPolicy("Production", policy =>
     {
-        policy.WithOrigins("https://event-manager.com")
-              .WithMethods("GET", "POST", "PUT", "DELETE")
-              .WithHeaders("Content-Type", "Authorization", "X-Requested-With")
+        policy.WithOrigins(corsSettings?.Origins?.Split(',') ?? [])
+              .WithMethods(corsSettings?.Methods?.Split(',') ?? [])
+              .WithHeaders(corsSettings?.Headers?.Split(',') ?? [])
               .AllowCredentials();
     });
 });
