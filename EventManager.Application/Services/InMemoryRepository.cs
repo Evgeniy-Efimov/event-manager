@@ -5,8 +5,13 @@ namespace EventManager.Application.Services;
 
 public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : BaseEntity
 {
-    private static readonly Dictionary<Guid, TEntity> _repository = [];
+    private readonly Dictionary<Guid, TEntity> _repository;
     private static readonly Lock _lock = new();
+
+    public InMemoryRepository(Dictionary<Guid, TEntity>? repository = null)
+    {
+        _repository = repository ?? [];
+    }
 
     public TEntity? Get(Guid id)
     {
