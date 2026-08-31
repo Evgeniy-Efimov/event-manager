@@ -13,47 +13,48 @@ public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : 
         _repository = repository ?? [];
     }
 
-    public TEntity? Get(Guid id)
+    public Task<TEntity?> Get(Guid id, CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
-            return _repository.GetValueOrDefault(id);
+            return Task.FromResult(_repository.GetValueOrDefault(id));
         }
     }
 
-    public List<TEntity> GetList()
+    public Task<List<TEntity>> GetList(CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
-            return _repository.Values.ToList();
+            return Task.FromResult(_repository.Values.ToList());
         }
     }
 
-    public void Create(TEntity entity)
+    public Task Create(TEntity entity, CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
             _repository[entity.Id] = entity;
+            return Task.CompletedTask;
         }
     }
 
-    public bool Update(TEntity entity)
+    public Task<bool> Update(TEntity entity, CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
             if (!_repository.ContainsKey(entity.Id))
-                return false;
+                return Task.FromResult(false);
 
             _repository[entity.Id] = entity;
-            return true;
+            return Task.FromResult(true);
         }
     }
 
-    public bool Delete(Guid id)
+    public Task<bool> Delete(Guid id, CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
-            return _repository.Remove(id);
+            return Task.FromResult(_repository.Remove(id));
         }
     }
 }

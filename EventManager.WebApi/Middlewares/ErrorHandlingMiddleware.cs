@@ -18,7 +18,6 @@ public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandling
         }
         catch (Exception ex)
         {
-            
             await HandleExceptionAsync(context, ex);
         }
     }

@@ -8,37 +8,38 @@ namespace EventManager.Application.Services;
 
 public class EventService(IRepository<Event> repository) : IEventService
 {
-    public EventDto Get(Guid id)
+    public async Task<EventDto> Get(Guid id, CancellationToken cancellationToken = default)
     {
-        return repository.Get(id)?.ToDto() ?? throw new NotFoundException($"Event '{id}' not found");
+        return (await repository.Get(id, cancellationToken))?.ToDto()
+            ?? throw new NotFoundException($"Event '{id}' not found");
     }
 
-    public List<EventDto> GetList()
+    public async Task<List<EventDto>> GetList(CancellationToken cancellationToken = default)
     {
-        return repository.GetList().ToDtoList();
+        return (await repository.GetList(cancellationToken)).ToDtoList();
     }
 
-    public EventDto Create(CreateEventDto eventDto)
+    public async Task<EventDto> Create(CreateEventDto eventDto, CancellationToken cancellationToken = default)
     {
         var @event = eventDto.ToDomain();
-        repository.Create(@event);
+        await repository.Create(@event, cancellationToken);
 
         return @event.ToDto();
     }
 
-    public EventDto Update(UpdateEventDto eventDto)
+    public async Task<EventDto> Update(UpdateEventDto eventDto, CancellationToken cancellationToken = default)
     {
         var @event = eventDto.ToDomain();
 
-        if (!repository.Update(@event))
+        if (!await repository.Update(@event, cancellationToken))
             throw new NotFoundException($"Event '{eventDto.Id}' not found");
 
         return @event.ToDto();
     }
 
-    public void Delete(Guid id)
+    public async Task Delete(Guid id, CancellationToken cancellationToken = default)
     {
-        if (!repository.Delete(id))
+        if (!await repository.Delete(id, cancellationToken))
             throw new NotFoundException($"Event '{id}' not found");
     }
 }

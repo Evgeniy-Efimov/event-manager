@@ -4,9 +4,9 @@ namespace EventManager.Application.Services.Interfaces;
 
 public interface IRepository<TEntity> where TEntity : BaseEntity
 {
-    TEntity? Get(Guid id);
-    List<TEntity> GetList();
-    void Create(TEntity entity);
-    bool Update(TEntity entity);
-    bool Delete(Guid id);
+    Task<TEntity?> Get(Guid id, CancellationToken cancellationToken = default);
+    Task<List<TEntity>> GetList(CancellationToken cancellationToken = default);
+    Task Create(TEntity entity, CancellationToken cancellationToken = default);
+    Task<bool> Update(TEntity entity, CancellationToken cancellationToken = default);
+    Task<bool> Delete(Guid id, CancellationToken cancellationToken = default);
 }
