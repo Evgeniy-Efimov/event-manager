@@ -37,19 +37,23 @@ public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : 
         }
     }
 
-    public void Update(TEntity entity)
+    public bool Update(TEntity entity)
     {
         lock (_lock)
         {
+            if (!_repository.ContainsKey(entity.Id))
+                return false;
+
             _repository[entity.Id] = entity;
+            return true;
         }
     }
 
-    public void Delete(Guid id)
+    public bool Delete(Guid id)
     {
         lock (_lock)
         {
-            _repository.Remove(id);
+            return _repository.Remove(id);
         }
     }
 }
