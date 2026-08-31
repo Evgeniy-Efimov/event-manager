@@ -18,12 +18,12 @@ public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandling
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Request processing error");
+            
             await HandleExceptionAsync(context, ex);
         }
     }
 
-    private static async Task HandleExceptionAsync(HttpContext context, Exception ex)
+    private async Task HandleExceptionAsync(HttpContext context, Exception ex)
     {
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = ex switch
@@ -32,7 +32,15 @@ public class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandling
             _ => (int)HttpStatusCode.InternalServerError
         };
 
+        var responseMessage = ex.Message;
+
+        if (context.Response.StatusCode == (int)HttpStatusCode.InternalServerError)
+        {
+            _logger.LogError(ex, "Request processing error");
+            responseMessage = "Internal server error occurred";
+        }
+
         await context.Response.WriteAsync(JsonSerializer.Serialize(
-            new ErrorResponse(context.Response.StatusCode, ex.Message, DateTime.UtcNow)));
+            new ErrorResponse(context.Response.StatusCode, responseMessage, DateTime.UtcNow)));
     }
 }

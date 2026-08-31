@@ -62,6 +62,7 @@ public class EventsController(IEventService eventService) : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public IActionResult Update(Guid id, [FromBody] UpdateEventDto eventDto)
     {
         if (id != eventDto.Id)
