@@ -12,10 +12,10 @@ public class CreateEventDto : IValidatableObject
     public string? Description { get; init; }
 
     [Required]
-    public DateTime StartAt { get; init; }
+    public DateTime? StartAt { get; init; }
 
     [Required]
-    public DateTime EndAt { get; init; }
+    public DateTime? EndAt { get; init; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

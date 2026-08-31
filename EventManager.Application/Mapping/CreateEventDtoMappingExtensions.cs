@@ -7,6 +7,10 @@ public static class CreateEventDtoMappingExtensions
 {
     public static Event ToDomain(this CreateEventDto eventDto)
     {
-        return new Event(eventDto.Title, eventDto.Description, eventDto.StartAt, eventDto.EndAt);
+        return new Event(
+            eventDto.Title,
+            eventDto.Description,
+            eventDto.StartAt ?? throw new ArgumentException("StartAt required"),
+            eventDto.EndAt ?? throw new ArgumentException("EndAt required"));
     }
 }
