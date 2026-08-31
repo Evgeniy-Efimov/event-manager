@@ -26,8 +26,8 @@ GET http://localhost:5226/api/events/12345678-1234-1234-1234-123456789abc
   "id": "12345678-1234-1234-1234-123456789abc",
   "title": "Event1",
   "description": "Event1 details",
-  "startAt": "2026-09-15T10:00:000Z",
-  "endAt": "2026-09-15T17:00:000Z"
+  "startAt": "2026-09-15T10:00:00Z",
+  "endAt": "2026-09-15T17:00:00Z"
 }
 ```
 
@@ -36,7 +36,7 @@ GET http://localhost:5226/api/events/12345678-1234-1234-1234-123456789abc
 {
   "StatusCode": 404,
   "Message": "Event '12345678-1234-1234-1234-123456789abc' not found",
-  "Timestamp": "2026-08-30T12:44:03.229Z"
+  "Timestamp": "2026-08-30T12:44:03.22Z"
 }
 ```
 
@@ -54,15 +54,15 @@ GET http://localhost:5226/api/events
     "id": "12345678-1234-1234-1234-123456789abc",
     "title": "Event1",
     "description": "Event1 details",
-    "startAt": "2026-09-15T10:00:000Z",
-    "endAt": "2026-09-15T17:00:000Z"
+    "startAt": "2026-09-15T10:00:00Z",
+    "endAt": "2026-09-15T17:00:00Z"
   },
   {
     "id": "87654321-4321-4321-4321-cba987654321",
     "title": "Event2",
     "description": "Event2 details",
-    "startAt": "2026-09-16T14:00:000Z",
-    "endAt": "2026-09-16T15:30:000Z"
+    "startAt": "2026-09-16T14:00:00Z",
+    "endAt": "2026-09-16T15:30:00Z"
   }
 ]
 ```
@@ -76,8 +76,8 @@ POST http://localhost:5226/api/events
 {
   "title": "Event3",
   "description": "Event3 description",
-  "startAt": "2026-10-01T09:00:000Z",
-  "endAt": "2026-10-01T11:00:000Z"
+  "startAt": "2026-10-01T09:00:00Z",
+  "endAt": "2026-10-01T11:00:00Z"
 }
 ```
 
