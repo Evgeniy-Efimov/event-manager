@@ -21,11 +21,11 @@ public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : 
         }
     }
 
-    public Task<List<TEntity>> GetList(CancellationToken cancellationToken = default)
+    public Task<IEnumerable<TEntity>> GetList(CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
-            return Task.FromResult(_repository.Values.ToList());
+            return Task.FromResult(_repository.Values.AsEnumerable());
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using EventManager.Application.Models.DTO;
+using EventManager.Application.Models.DTO.Events;
 using EventManager.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,15 +25,17 @@ public class EventsController(IEventService eventService) : ControllerBase
     }
 
     /// <summary>
-    /// Get list with all events
+    /// Get events list page
     /// </summary>
-    /// <returns>List of EventDto</returns>
+    /// <param name="request">Events request</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>PaginatedResultDto of EventDto</returns>
     [HttpGet]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(IEnumerable<EventDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetList(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(PaginatedResultDto<EventDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetList([FromQuery]EventsRequestDto request, CancellationToken cancellationToken)
     {
-        return Ok(await eventService.GetList(cancellationToken));
+        return Ok(await eventService.GetList(request, cancellationToken));
     }
 
     /// <summary>

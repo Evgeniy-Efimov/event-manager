@@ -1,7 +1,7 @@
-﻿using EventManager.Application.Models.DTO;
+﻿using EventManager.Application.Models.DTO.Events;
 using EventManager.Domain.Models;
 
-namespace EventManager.Application.Mapping;
+namespace EventManager.Application.Extensions.Mapping;
 
 public static class CreateEventDtoMappingExtensions
 {
