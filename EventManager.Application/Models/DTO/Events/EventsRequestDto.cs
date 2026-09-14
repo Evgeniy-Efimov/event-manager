@@ -1,9 +1,9 @@
 ﻿namespace EventManager.Application.Models.DTO.Events;
 
 public record EventsRequestDto(
-    int? Page,
-    int? PageSize,
-    string? Title,
-    DateTime? From,
-    DateTime? To
+    int? Page = null,
+    int? PageSize = null,
+    string? Title = null,
+    DateTime? From = null,
+    DateTime? To = null
 );
