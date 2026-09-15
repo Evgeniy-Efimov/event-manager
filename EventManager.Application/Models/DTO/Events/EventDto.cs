@@ -1,4 +1,4 @@
-﻿namespace EventManager.Application.Models.DTO;
+﻿namespace EventManager.Application.Models.DTO.Events;
 
 public record EventDto(
     Guid Id,

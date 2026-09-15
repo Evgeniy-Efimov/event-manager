@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="EventManager.Application/EventManager.Application.csproj" />
   <Project Path="EventManager.Domain/EventManager.Domain.csproj" />
+  <Project Path="EventManager.UnitTests/EventManager.UnitTests.csproj" Id="fc74021f-ddbc-447f-80f4-8eb5b8d93f42" />
   <Project Path="EventManager.WebApi/EventManager.WebApi.csproj" />
 </Solution>
