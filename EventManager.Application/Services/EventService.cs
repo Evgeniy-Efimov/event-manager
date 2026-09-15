@@ -20,7 +20,7 @@ public class EventService(IRepository<Event> repository) : IEventService
     public async Task<PaginatedResultDto<EventDto>> GetList(EventsRequestDto request, CancellationToken cancellationToken = default)
     {
         var query = (await repository.GetList(cancellationToken)).ApplyFilters(request);
-        var (page, pageSize, pageQuery) = query.GetPage(request.Page, request.PageSize);
+        var (page, pageSize, pageQuery) = query.ApplySorting().GetPage(request.Page, request.PageSize);
 
         return new PaginatedResultDto<EventDto>(query.Count(), page, pageSize, pageQuery.ToDtoArray());
     }

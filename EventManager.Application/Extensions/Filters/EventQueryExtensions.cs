@@ -16,6 +16,11 @@ public static class EventQueryExtensions
         if (request.To.HasValue)
             query = query.Where(e => e.EndAt <= request.To.Value);
 
+        return query;
+    }
+
+    public static IEnumerable<Event> ApplySorting(this IEnumerable<Event> query)
+    {
         return query.OrderByDescending(c => c.StartAt);
     }
 }
