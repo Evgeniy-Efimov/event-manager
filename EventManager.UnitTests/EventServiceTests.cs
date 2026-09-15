@@ -152,7 +152,7 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     [Theory]
     [InlineData(null, PaginationConstants.DefaultPageSize, TestEventsCount)]
     [InlineData("", PaginationConstants.DefaultPageSize, TestEventsCount)]
-    [InlineData("Evening", 2, 2)]
+    [InlineData("evening", 2, 2)]
     [InlineData("Some long not existed in test data title", 0, 0)]
     public async Task GetList_FilterByName_ReturnsExpected(string? titleFilter, int expectedCount, int expectedTotalCount)
     {
@@ -165,7 +165,7 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
 
         if (!string.IsNullOrEmpty(titleFilter))
         {
-            Assert.All(result.Results, r => Assert.Contains(titleFilter, r.Title));
+            Assert.All(result.Results, r => Assert.Contains(titleFilter, r.Title, StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -234,7 +234,7 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
             {
                 new EventsRequestDto()
                 {
-                    Title = "ing",
+                    Title = "ING",
                     From = DateTime.Today,
                     To = DateTime.Today.AddDays(7),
                     Page = 2,
@@ -263,7 +263,7 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
 
         if (!string.IsNullOrEmpty(request.Title))
         {
-            Assert.All(result.Results, r => Assert.Contains(request.Title, r.Title));
+            Assert.All(result.Results, r => Assert.Contains(request.Title, r.Title, StringComparison.OrdinalIgnoreCase));
         }
         if (request.From.HasValue)
         {

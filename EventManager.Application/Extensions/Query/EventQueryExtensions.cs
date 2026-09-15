@@ -8,7 +8,7 @@ public static class EventQueryExtensions
     public static IEnumerable<Event> ApplyFilters(this IEnumerable<Event> query, EventsRequestDto request)
     {
         if (!string.IsNullOrEmpty(request.Title))
-            query = query.Where(e => e.Title.Contains(request.Title));
+            query = query.Where(e => e.Title.Contains(request.Title, StringComparison.OrdinalIgnoreCase));
 
         if (request.From.HasValue)
             query = query.Where(e => e.StartAt >= request.From.Value);
