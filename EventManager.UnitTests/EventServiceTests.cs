@@ -200,12 +200,13 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     }
 
     [Theory]
-    [InlineData(null, null, 1, PaginationConstants.DefaultPageSize, PaginationConstants.DefaultPageSize)]
-    [InlineData(-1, -1, 1, 1, 1)]
-    [InlineData(0, 0, 1, 1, 1)]
+    [InlineData(null, null, PaginationConstants.DefaultPage, PaginationConstants.DefaultPageSize, PaginationConstants.DefaultPageSize)]
+    [InlineData(-1, -1, PaginationConstants.DefaultPage, PaginationConstants.MinPageSize, PaginationConstants.MinPageSize)]
+    [InlineData(0, 0, PaginationConstants.DefaultPage, PaginationConstants.MinPageSize, PaginationConstants.MinPageSize)]
     [InlineData(1, 1, 1, 1, 1)]
     [InlineData(4, 4, 4, 4, 3)]
     [InlineData(2, 15, 2, 15, 0)]
+    [InlineData(null, 101, PaginationConstants.DefaultPage, PaginationConstants.MaxPageSize, TestEventsCount)]
     public async Task GetList_WithPagination_ReturnsExpected(int? page, int? pageSize, int expectedPage, int expectedPageSize, int expectedCount)
     {
         // Act

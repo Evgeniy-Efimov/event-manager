@@ -8,7 +8,9 @@ public static class PaginationExtensions
         this IEnumerable<TResult> query, int? page, int? pageSize)
     {
         page = Math.Max(PaginationConstants.DefaultPage, page ?? PaginationConstants.DefaultPage);
-        pageSize = Math.Max(1, pageSize ?? PaginationConstants.DefaultPageSize);
+        pageSize = Math.Min(
+            PaginationConstants.MaxPageSize,
+            Math.Max(PaginationConstants.MinPageSize, pageSize ?? PaginationConstants.DefaultPageSize));
 
         return (page.Value, pageSize.Value, query
             .Skip((page.Value - 1) * pageSize.Value)
