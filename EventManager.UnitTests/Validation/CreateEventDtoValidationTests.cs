@@ -29,7 +29,7 @@ public class CreateEventDtoValidationTests : ValidationTestBase
         var validationResults = Validate(eventDto);
 
         // Assert
-        AssertErrors(expectedErrors, validationResults);
+        AssertValidationResults(expectedErrors, validationResults);
     }
 
     public static IEnumerable<object?[]> Validate_Description_ReturnsExpected_TestData() =>
@@ -56,7 +56,7 @@ public class CreateEventDtoValidationTests : ValidationTestBase
         var validationResults = Validate(eventDto);
 
         // Assert
-        AssertErrors(expectedErrors, validationResults);
+        AssertValidationResults(expectedErrors, validationResults);
     }
 
     public static IEnumerable<object?[]> Validate_Dates_ReturnsExpected_TestData() =>
@@ -83,6 +83,6 @@ public class CreateEventDtoValidationTests : ValidationTestBase
         var validationResults = Validate(eventDto);
 
         // Assert
-        AssertErrors(expectedErrors, validationResults);
+        AssertValidationResults(expectedErrors, validationResults);
     }
 }

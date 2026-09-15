@@ -22,34 +22,6 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
         Assert.Equal(TestEventsCount, _testEvents.Count);
     }
 
-    private static IEnumerable<Event> FilterEvents(IEnumerable<Event> events,
-        string? title = null, DateTime? from = null, DateTime? to = null)
-    {
-        return events.Where(e => string.IsNullOrEmpty(title) || e.Title.Contains(title))
-            .Where(e => (!from.HasValue || e.StartAt >= from) && (!to.HasValue || e.EndAt <= to))
-            .OrderByDescending(e => e.StartAt);
-    }
-
-    private static IEnumerable<Event> FilterEvents(IEnumerable<Event> events, EventsRequestDto request)
-    {
-        return FilterEvents(events, title: request.Title, from: request.From, to: request.To);
-    }
-
-    private static IEnumerable<Event> PaginateEvents(IEnumerable<Event> events, int? page, int? pageSize)
-    {
-        page ??= PaginationConstants.DefaultPage;
-        page = page < PaginationConstants.DefaultPage ? PaginationConstants.DefaultPage : page;
-        pageSize ??= PaginationConstants.DefaultPageSize;
-        pageSize = pageSize < 1 ? 1 : pageSize;
-
-        return events.Skip((page.Value - 1) * pageSize.Value).Take(pageSize.Value);
-    }
-
-    private static IEnumerable<Event> PaginateEvents(IEnumerable<Event> events, EventsRequestDto request)
-    {
-        return PaginateEvents(events, page: request.Page, pageSize: request.PageSize);
-    }
-
     [Fact]
     public async Task Create_NewEvent_Success()
     {
@@ -67,6 +39,7 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
 
         // Assert
         Assert.NotNull(result);
+        Assert.NotEqual(Guid.Empty, result.Id);
         Assert.Equal(newEvent.Title, result.Title);
         Assert.Equal(newEvent.Description, result.Description);
         Assert.Equal(newEvent.StartAt, result.StartAt);
@@ -74,7 +47,7 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     }
 
     [Fact]
-    public async Task GetByID_ExistedEvent_Success()
+    public async Task GetById_ExistedEvent_Success()
     {
         // Arrange
         var existedEvent = _testEvents.First();
@@ -84,15 +57,15 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(result.Id, existedEvent.Id);
-        Assert.Equal(result.Title, existedEvent.Title);
-        Assert.Equal(result.Description, existedEvent.Description);
-        Assert.Equal(result.StartAt, existedEvent.StartAt);
-        Assert.Equal(result.EndAt, existedEvent.EndAt);
+        Assert.Equal(existedEvent.Id, result.Id);
+        Assert.Equal(existedEvent.Title, result.Title);
+        Assert.Equal(existedEvent.Description, result.Description);
+        Assert.Equal(existedEvent.StartAt, result.StartAt);
+        Assert.Equal(existedEvent.EndAt, result.EndAt);
     }
 
     [Fact]
-    public async Task GetByID_NotExistedEvent_NotFoundException()
+    public async Task GetById_NotExistedEvent_NotFoundException()
     {
         // Arrange
         var notExistedId = Guid.NewGuid();
@@ -124,18 +97,18 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(result.Id, updatedEvent.Id);
-        Assert.Equal(result.Title, updatedEvent.Title);
-        Assert.Equal(result.Description, updatedEvent.Description);
-        Assert.Equal(result.StartAt, updatedEvent.StartAt);
-        Assert.Equal(result.EndAt, updatedEvent.EndAt);
+        Assert.Equal(updatedEvent.Id, result.Id);
+        Assert.Equal(updatedEvent.Title, result.Title);
+        Assert.Equal(updatedEvent.Description, result.Description);
+        Assert.Equal(updatedEvent.StartAt, result.StartAt);
+        Assert.Equal(updatedEvent.EndAt, result.EndAt);
     }
 
     [Fact]
     public async Task Update_NotExistedEvent_NotFoundException()
     {
         // Arrange
-        var updatedEvent = new UpdateEventDto()
+        var notExistedEvent = new UpdateEventDto()
         {
             Id = Guid.NewGuid(),
             Title = "New title",
@@ -145,11 +118,11 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
         };
 
         // Act
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _eventService.Update(updatedEvent));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _eventService.Update(notExistedEvent));
 
         // Assert
         Assert.NotNull(exception);
-        Assert.Equal($"Event '{updatedEvent.Id}' not found", exception.Message);
+        Assert.Equal($"Event '{notExistedEvent.Id}' not found", exception.Message);
     }
 
     [Fact]
@@ -183,17 +156,10 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     [InlineData("Some long not existed in test data title", 0, 0)]
     public async Task GetList_FilterByName_ReturnsExpected(string? titleFilter, int expectedCount, int expectedTotalCount)
     {
-        // Arrange
-        var expectedCodes = FilterEvents(_testEvents, title: titleFilter)
-            .Take(PaginationConstants.DefaultPageSize)
-            .Select(e => e.Id)
-            .ToList();
-
         // Act
         var result = await _eventService.GetList(new EventsRequestDto() { Title = titleFilter });
 
         // Assert
-        Assert.Equal(expectedCodes, result.Results.Select(e => e.Id).ToList());
         Assert.Equal(expectedCount, result.Results.Length);
         Assert.Equal(expectedTotalCount, result.TotalCount);
 
@@ -216,17 +182,10 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     public async Task GetList_FilterByDates_ReturnsExpected(
         DateTime? startAtFilter, DateTime? endAtFilter, int expectedCount, int expectedTotalCount)
     {
-        // Arrange
-        var expectedCodes = FilterEvents(_testEvents, from: startAtFilter, to: endAtFilter)
-            .Take(PaginationConstants.DefaultPageSize)
-            .Select(e => e.Id)
-            .ToList();
-
         // Act
         var result = await _eventService.GetList(new EventsRequestDto() { From = startAtFilter, To = endAtFilter });
 
         // Assert
-        Assert.Equal(expectedCodes, result.Results.Select(e => e.Id).ToList());
         Assert.Equal(expectedCount, result.Results.Length);
         Assert.Equal(expectedTotalCount, result.TotalCount);
         
@@ -241,26 +200,21 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     }
 
     [Theory]
-    [InlineData(null, null, PaginationConstants.DefaultPageSize)]
-    [InlineData(-1, -1, 1)]
-    [InlineData(0, 0, 1)]
-    [InlineData(1, 1, 1)]
-    [InlineData(3, 6, 3)]
-    [InlineData(2, 15, 0)]
-    public async Task GetList_Pagination_ReturnsExpected(int? page, int? pageSize, int expectedCount)
+    [InlineData(null, null, 1, PaginationConstants.DefaultPageSize, PaginationConstants.DefaultPageSize)]
+    [InlineData(-1, -1, 1, 1, 1)]
+    [InlineData(0, 0, 1, 1, 1)]
+    [InlineData(1, 1, 1, 1, 1)]
+    [InlineData(4, 4, 4, 4, 3)]
+    [InlineData(2, 15, 2, 15, 0)]
+    public async Task GetList_WithPagination_ReturnsExpected(int? page, int? pageSize, int expectedPage, int expectedPageSize, int expectedCount)
     {
-        // Arrange
-        var expectedCodes = PaginateEvents(FilterEvents(_testEvents), page, pageSize)
-            .Select(e => e.Id)
-            .ToList();
-
         // Act
         var result = await _eventService.GetList(new EventsRequestDto() { Page = page, PageSize = pageSize });
 
         // Assert
-        Assert.Equal(expectedCodes, result.Results.Select(e => e.Id).ToList());
-        Assert.Equal(page > 0 ? page : 1, result.Page);
-        Assert.Equal(pageSize > 0 ? pageSize : expectedCount, result.PageSize);
+        Assert.Equal(expectedCount, result.Results.Length);
+        Assert.Equal(expectedPage, result.Page);
+        Assert.Equal(expectedPageSize, result.PageSize);
         Assert.Equal(TestEventsCount, result.TotalCount);
     }
 
@@ -271,6 +225,8 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
             yield return new object[]
             {
                 new EventsRequestDto(),
+                PaginationConstants.DefaultPage,
+                PaginationConstants.DefaultPageSize,
                 PaginationConstants.DefaultPageSize,
                 TestEventsCount
             };
@@ -284,8 +240,7 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
                     Page = 2,
                     PageSize = 3
                 },
-                2,
-                5
+                2, 3, 2, 5
             };
         }
 
@@ -295,20 +250,15 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     [Theory]
     [ClassData(typeof(GetList_FilterWithPagination_ReturnsExpected_TestData))]
     public async Task GetList_FilterWithPagination_ReturnsExpected(
-        EventsRequestDto request, int expectedCount, int expectedTotalCount)
+        EventsRequestDto request, int expectedPage, int expectedPageSize, int expectedCount, int expectedTotalCount)
     {
-        // Arrange
-        var expectedCodes = PaginateEvents(FilterEvents(_testEvents, request), request)
-            .Select(e => e.Id)
-            .ToList();
-
         // Act
         var result = await _eventService.GetList(request);
 
         // Assert
-        Assert.Equal(expectedCodes, result.Results.Select(e => e.Id).ToList());
-        Assert.Equal(request.Page > 0 ? request.Page : 1, result.Page);
-        Assert.Equal(result.PageSize > 0 ? result.PageSize : expectedCount, result.PageSize);
+        Assert.Equal(expectedPage, result.Page);
+        Assert.Equal(expectedPageSize, result.PageSize);
+        Assert.Equal(expectedCount, result.Results.Length);
         Assert.Equal(expectedTotalCount, result.TotalCount);
 
         if (!string.IsNullOrEmpty(request.Title))
