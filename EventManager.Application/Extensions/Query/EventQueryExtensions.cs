@@ -1,7 +1,7 @@
 ﻿using EventManager.Application.Models.DTO.Events;
 using EventManager.Domain.Models;
 
-namespace EventManager.Application.Extensions.Filters;
+namespace EventManager.Application.Extensions.Query;
 
 public static class EventQueryExtensions
 {

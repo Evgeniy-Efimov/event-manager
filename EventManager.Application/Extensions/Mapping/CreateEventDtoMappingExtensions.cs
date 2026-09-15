@@ -1,4 +1,5 @@
 ﻿using EventManager.Application.Models.DTO.Events;
+using EventManager.Application.Models.Exceptions;
 using EventManager.Domain.Models;
 
 namespace EventManager.Application.Extensions.Mapping;
@@ -10,7 +11,7 @@ public static class CreateEventDtoMappingExtensions
         return new Event(
             eventDto.Title,
             eventDto.Description,
-            eventDto.StartAt ?? throw new ArgumentException("StartAt required"),
-            eventDto.EndAt ?? throw new ArgumentException("EndAt required"));
+            eventDto.StartAt ?? throw new ValidationException("StartAt required"),
+            eventDto.EndAt ?? throw new ValidationException("EndAt required"));
     }
 }

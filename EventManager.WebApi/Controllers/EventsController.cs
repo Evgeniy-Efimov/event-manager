@@ -1,5 +1,6 @@
 ﻿using EventManager.Application.Models.DTO;
 using EventManager.Application.Models.DTO.Events;
+using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -73,7 +74,7 @@ public class EventsController(IEventService eventService) : ControllerBase
     {
         if (id != eventDto.Id)
         {
-            return BadRequest($"Event id mismatch, route: {id}, DTO: {eventDto.Id}");
+            throw new ValidationException($"Event id mismatch, route: {id}, DTO: {eventDto.Id}");
         }
 
         await eventService.Update(eventDto, cancellationToken);

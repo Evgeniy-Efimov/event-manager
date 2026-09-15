@@ -20,6 +20,13 @@ public class ExceptionHandler(ILogger<ExceptionHandler> logger) : IExceptionHand
                 Detail = notFoundException.Message,
                 Instance = httpContext.Request.Path
             },
+            ValidationException validationException => new ValidationProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Validation failed",
+                Detail = validationException.Message,
+                Instance = httpContext.Request.Path
+            },
             _ => new ProblemDetails
             {
                 Status = StatusCodes.Status500InternalServerError,

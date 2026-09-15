@@ -1,6 +1,6 @@
 ﻿using EventManager.Application.Extensions;
-using EventManager.Application.Extensions.Filters;
 using EventManager.Application.Extensions.Mapping;
+using EventManager.Application.Extensions.Query;
 using EventManager.Application.Models.DTO;
 using EventManager.Application.Models.DTO.Events;
 using EventManager.Application.Models.Exceptions;
