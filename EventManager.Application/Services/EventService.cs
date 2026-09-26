@@ -9,11 +9,16 @@ using EventManager.Domain.Models;
 
 namespace EventManager.Application.Services;
 
-public class EventService(IRepository<Event> repository) : IEventService
+public class EventService(IRepository<Event> repository, IDateTimeProvider dateTimeProvider) : IEventService
 {
     public async Task<EventDto> Get(Guid id, CancellationToken cancellationToken = default)
     {
-        return (await repository.Get(id, cancellationToken))?.ToDto()
+        return (await GetDomain(id, cancellationToken)).ToDto();
+    }
+
+    public async Task<Event> GetDomain(Guid id, CancellationToken cancellationToken = default)
+    {
+        return (await repository.Get(id, cancellationToken))
             ?? throw new NotFoundException($"Event '{id}' not found");
     }
 
@@ -27,7 +32,7 @@ public class EventService(IRepository<Event> repository) : IEventService
 
     public async Task<EventDto> Create(CreateEventDto eventDto, CancellationToken cancellationToken = default)
     {
-        var @event = eventDto.ToDomain();
+        var @event = eventDto.ToDomain(dateTimeProvider.Now);
         await repository.Create(@event, cancellationToken);
 
         return @event.ToDto();
@@ -35,12 +40,13 @@ public class EventService(IRepository<Event> repository) : IEventService
 
     public async Task<EventDto> Update(UpdateEventDto eventDto, CancellationToken cancellationToken = default)
     {
-        var @event = eventDto.ToDomain();
+        var @event = await GetDomain(eventDto.Id, cancellationToken);
+        var updatedEvent = eventDto.ApplyToDomain(@event, dateTimeProvider.Now);
 
-        if (!await repository.Update(@event, cancellationToken))
-            throw new NotFoundException($"Event '{eventDto.Id}' not found");
+        if (!await repository.Update(updatedEvent, cancellationToken))
+            throw new InvalidOperationException($"Failed to update event '{eventDto.Id}'");
 
-        return @event.ToDto();
+        return updatedEvent.ToDto();
     }
 
     public async Task Delete(Guid id, CancellationToken cancellationToken = default)

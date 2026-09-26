@@ -7,7 +7,10 @@ using EventManager.Domain.Models;
 
 namespace EventManager.Application.Services;
 
-public class BookingService(IRepository<Booking> repository, IEventService eventService) : IBookingService
+public class BookingService(
+    IRepository<Booking> repository,
+    IEventService eventService,
+    IDateTimeProvider dateTimeProvider) : IBookingService
 {
     public async Task<BookingDto> Get(Guid id, CancellationToken cancellationToken = default)
     {
@@ -31,7 +34,7 @@ public class BookingService(IRepository<Booking> repository, IEventService event
     public async Task<BookingDto> Create(Guid eventId, CancellationToken cancellationToken = default)
     {
         var @event = await eventService.Get(eventId, cancellationToken);
-        var booking = new Booking(@event.Id, BookingStatus.Pending);
+        var booking = new Booking(@event.Id, BookingStatus.Pending, dateTimeProvider.Now);
         await repository.Create(booking, cancellationToken);
 
         return booking.ToDto();
@@ -55,8 +58,10 @@ public class BookingService(IRepository<Booking> repository, IEventService event
             throw new ValidationException($"Can't process booking in status '{booking.Status}'");
 
         booking.Status = status;
-        booking.ProcessedAt = DateTime.UtcNow;
-        await repository.Update(booking, cancellationToken);
+        booking.ProcessedAt = dateTimeProvider.Now;
+
+        if (!await repository.Update(booking, cancellationToken))
+            throw new InvalidOperationException($"Failed to update booking '{booking.Id}'");
 
         return booking.ToDto();
     }

@@ -6,13 +6,15 @@ namespace EventManager.Application.Extensions.Mapping.Events;
 
 public static class UpdateEventDtoMappingExtensions
 {
-    public static Event ToDomain(this UpdateEventDto eventDto)
+    public static Event ApplyToDomain(this UpdateEventDto eventDto, Event @event, DateTime updatedAt)
     {
         return new Event(
             eventDto.Title,
             eventDto.Description,
             eventDto.StartAt ?? throw new ValidationException("StartAt required"),
             eventDto.EndAt ?? throw new ValidationException("EndAt required"),
+            @event.CreatedAt,
+            updatedAt,
             eventDto.Id);
     }
 }

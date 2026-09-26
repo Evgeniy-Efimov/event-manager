@@ -11,7 +11,8 @@ public static class BookingMappingExtensions
             booking.Id,
             booking.EventId,
             booking.Status,
+            booking.ProcessedAt,
             booking.CreatedAt,
-            booking.ProcessedAt);
+            booking.UpdatedAt);
     }
 }

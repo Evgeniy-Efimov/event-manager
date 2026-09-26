@@ -8,8 +8,11 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddEventManager(this IServiceCollection services)
     {
+        services.AddSingleton<IDateTimeProvider, UtcDateTimeProvider>();
+
         services.AddSingleton<IRepository<Event>, InMemoryRepository<Event>>();
         services.AddSingleton<IRepository<Booking>, InMemoryRepository<Booking>>();
+
         services.AddSingleton<IEventService, EventService>();
         services.AddSingleton<IBookingService, BookingService>();
 

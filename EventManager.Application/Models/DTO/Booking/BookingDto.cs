@@ -6,6 +6,7 @@ public record BookingDto(
     Guid Id,
     Guid EventId,
     BookingStatus Status,
+    DateTime? ProcessedAt,
     DateTime CreatedAt,
-    DateTime? ProcessedAt
+    DateTime UpdatedAt
 );

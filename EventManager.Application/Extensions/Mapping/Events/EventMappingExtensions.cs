@@ -12,7 +12,9 @@ public static class EventMappingExtensions
             @event.Title,
             @event.Description,
             @event.StartAt,
-            @event.EndAt);
+            @event.EndAt,
+            @event.CreatedAt,
+            @event.UpdatedAt);
     }
 
     public static List<EventDto> ToDtoList(this IEnumerable<Event> events)

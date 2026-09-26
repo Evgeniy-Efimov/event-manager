@@ -5,5 +5,7 @@ public record EventDto(
     string Title,
     string? Description,
     DateTime StartAt,
-    DateTime EndAt
+    DateTime EndAt,
+    DateTime CreatedAt,
+    DateTime UpdatedAt
 );
