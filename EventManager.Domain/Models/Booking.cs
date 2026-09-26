@@ -13,11 +13,4 @@ public class Booking(
     public Guid EventId { get; set; } = eventId;
     public BookingStatus Status { get; set; } = status;
     public DateTime? ProcessedAt { get; set; } = processedAt;
-
-    public void UpdateToProcessed(BookingStatus status, DateTime processedAt)
-    {
-        Status = status;
-        ProcessedAt = processedAt;
-        UpdatedAt = processedAt;
-    }
 }

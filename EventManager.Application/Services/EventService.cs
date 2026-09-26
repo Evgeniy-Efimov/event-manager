@@ -41,12 +41,17 @@ public class EventService(IRepository<Event> repository, IDateTimeProvider dateT
     public async Task<EventDto> Update(UpdateEventDto eventDto, CancellationToken cancellationToken = default)
     {
         var @event = await GetDomain(eventDto.Id, cancellationToken);
-        var updatedEvent = eventDto.ApplyToDomain(@event, dateTimeProvider.Now);
+        @event.Title = eventDto.Title;
+        @event.Description = eventDto.Description;
+        @event.StartAt = eventDto.StartAt ?? throw new ValidationException("StartAt required");
+        @event.EndAt = eventDto.EndAt ?? throw new ValidationException("EndAt required");
+        @event.Title = eventDto.Title;
+        @event.UpdatedAt = dateTimeProvider.Now;
 
-        if (!await repository.Update(updatedEvent, cancellationToken))
+        if (!await repository.Update(@event, cancellationToken))
             throw new InvalidOperationException($"Failed to update event '{eventDto.Id}'");
 
-        return updatedEvent.ToDto();
+        return @event.ToDto();
     }
 
     public async Task Delete(Guid id, CancellationToken cancellationToken = default)

@@ -17,11 +17,6 @@ public static class EventMappingExtensions
             @event.UpdatedAt);
     }
 
-    public static List<EventDto> ToDtoList(this IEnumerable<Event> events)
-    {
-        return events.Select(e => e.ToDto()).ToList();
-    }
-
     public static EventDto[] ToDtoArray(this IEnumerable<Event> events)
     {
         return events.Select(e => e.ToDto()).ToArray();
