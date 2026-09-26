@@ -57,8 +57,7 @@ public class BookingService(
         if (booking.Status != BookingStatus.Pending)
             throw new ValidationException($"Can't process booking in status '{booking.Status}'");
 
-        booking.Status = status;
-        booking.ProcessedAt = dateTimeProvider.Now;
+        booking.UpdateToProcessed(status, dateTimeProvider.Now);
 
         if (!await repository.Update(booking, cancellationToken))
             throw new InvalidOperationException($"Failed to update booking '{booking.Id}'");

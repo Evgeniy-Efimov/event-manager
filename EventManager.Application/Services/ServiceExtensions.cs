@@ -1,4 +1,5 @@
-﻿using EventManager.Application.Services.Interfaces;
+﻿using EventManager.Application.BackgroundServices;
+using EventManager.Application.Services.Interfaces;
 using EventManager.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,8 @@ public static class ServiceExtensions
 
         services.AddSingleton<IEventService, EventService>();
         services.AddSingleton<IBookingService, BookingService>();
+
+        services.AddHostedService<BookingBackgroundService>();
 
         return services;
     }

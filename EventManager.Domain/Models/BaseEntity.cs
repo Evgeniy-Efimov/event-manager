@@ -4,7 +4,7 @@ public abstract class BaseEntity
 {
     public Guid Id { get; init; }
     public DateTime CreatedAt { get; init; }
-    public DateTime UpdatedAt { get; init; }
+    public DateTime UpdatedAt { get; set; }
 
     protected BaseEntity(Guid? id = null, DateTime? createdAt = null, DateTime? updatedAt = null)
     {
