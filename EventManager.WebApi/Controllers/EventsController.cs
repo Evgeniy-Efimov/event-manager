@@ -8,7 +8,7 @@ namespace EventManager.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class EventsController(IEventService eventService) : ControllerBase
+public class EventsController(IEventService eventService, IBookingService bookingService) : ControllerBase
 {
     /// <summary>
     /// Get event by ID
@@ -48,7 +48,7 @@ public class EventsController(IEventService eventService) : ControllerBase
     [HttpPost]
     [Consumes("application/json")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(EventDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateEventDto eventDto, CancellationToken cancellationToken)
     {
@@ -66,7 +66,6 @@ public class EventsController(IEventService eventService) : ControllerBase
     /// <returns>Empty response with status 204</returns>
     [HttpPut("{id}")]
     [Consumes("application/json")]
-    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -96,5 +95,27 @@ public class EventsController(IEventService eventService) : ControllerBase
         await eventService.Delete(id, cancellationToken);
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Create booking for event
+    /// </summary>
+    /// <param name="eventId">Event ID</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns>Accepted 202 with booking ID and Location header</returns>
+    [HttpPost("{eventId}/book")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateBooking(Guid eventId, CancellationToken cancellationToken)
+    {
+        var created = await bookingService.Create(eventId, cancellationToken);
+        Response.Headers.Location = Url.Action(
+            nameof(BookingsController.GetById),
+            "Bookings",
+            new { id = created.Id },
+            protocol: Request.Scheme);
+
+        return Accepted(new { created.Id, Status = created.Status.ToString() });
     }
 }

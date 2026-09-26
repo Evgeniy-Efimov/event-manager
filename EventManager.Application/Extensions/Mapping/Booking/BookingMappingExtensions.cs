@@ -10,7 +10,7 @@ public static class BookingMappingExtensions
         return new BookingDto(
             booking.Id,
             booking.EventId,
-            booking.Status,
+            booking.Status.ToString(),
             booking.ProcessedAt,
             booking.CreatedAt,
             booking.UpdatedAt);
