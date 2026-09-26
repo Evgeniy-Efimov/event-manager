@@ -11,17 +11,17 @@ namespace EventManager.UnitTests;
 
 public class EventServiceTests : IClassFixture<EventServiceFixture>
 {
+    private Mock<IDateTimeProvider> DateTimeProviderMock => _fixture.DateTimeProviderMock;
     private readonly EventServiceFixture _fixture;
     private IEventService EventService => _fixture.EventService;
-    private readonly List<Event> _testEvents;
+    private List<Event> TestEvents => _fixture.TestEvents;
     private const int TestEventsCount = 15;
 
     public EventServiceTests(EventServiceFixture fixture)
     {
         _fixture = fixture;
-        _testEvents = fixture.TestEvents;
 
-        Assert.Equal(TestEventsCount, _testEvents.Count);
+        Assert.Equal(TestEventsCount, TestEvents.Count);
     }
 
     [Fact]
@@ -29,9 +29,7 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     {
         // Arrange
         var createdAt = DateTime.UtcNow;
-        var dateTimeProvider = new Mock<IDateTimeProvider>();
-        dateTimeProvider.Setup(p => p.Now).Returns(createdAt);
-        _fixture.DateTimeProvider = dateTimeProvider.Object;
+        DateTimeProviderMock.Setup(p => p.Now).Returns(createdAt);
 
         var newEvent = new CreateEventDto()
         {
@@ -59,7 +57,7 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     public async Task GetById_ExistedEvent_Success()
     {
         // Arrange
-        var existedEvent = _testEvents.First();
+        var existedEvent = TestEvents.First();
 
         // Act
         var result = await EventService.Get(existedEvent.Id);
@@ -71,6 +69,8 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
         Assert.Equal(existedEvent.Description, result.Description);
         Assert.Equal(existedEvent.StartAt, result.StartAt);
         Assert.Equal(existedEvent.EndAt, result.EndAt);
+        Assert.Equal(existedEvent.CreatedAt, result.CreatedAt);
+        Assert.Equal(existedEvent.UpdatedAt, result.UpdatedAt);
     }
 
     [Fact]
@@ -92,11 +92,9 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     {
         // Arrange
         var updatedAt = DateTime.UtcNow;
-        var dateTimeProvider = new Mock<IDateTimeProvider>();
-        dateTimeProvider.Setup(p => p.Now).Returns(updatedAt);
-        _fixture.DateTimeProvider = dateTimeProvider.Object;
+        DateTimeProviderMock.Setup(p => p.Now).Returns(updatedAt);
 
-        var existedEvent = _testEvents.First();
+        var existedEvent = TestEvents.First();
         var updatedEvent = new UpdateEventDto()
         {
             Id = existedEvent.Id,
@@ -145,7 +143,7 @@ public class EventServiceTests : IClassFixture<EventServiceFixture>
     public async Task Delete_ExistedEvent_Success()
     {
         // Arrange
-        var existedEvent = _testEvents.First();
+        var existedEvent = TestEvents.First();
 
         // Act
         await EventService.Delete(existedEvent.Id);

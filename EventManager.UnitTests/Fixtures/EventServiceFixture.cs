@@ -4,10 +4,11 @@ using EventManager.Domain.Models;
 
 namespace EventManager.UnitTests.Fixtures;
 
-public class EventServiceFixture()
+public class EventServiceFixture : BaseServiceFixture
 {
-    public IDateTimeProvider DateTimeProvider { get; set; } = new UtcDateTimeProvider();
-    public IEventService EventService => new EventService(new InMemoryRepository<Event>(TestEvents.ToDictionary(e => e.Id)), DateTimeProvider);
+    public IEventService EventService => new EventService(new InMemoryRepository<Event>(
+        TestEvents.ToDictionary(e => e.Id, e => new Event(e.Title, e.Description, e.StartAt, e.EndAt, e.CreatedAt, e.UpdatedAt, e.Id))),
+        DateTimeProvider);
 
     public readonly List<Event> TestEvents =
     [

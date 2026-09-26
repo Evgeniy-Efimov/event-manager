@@ -34,7 +34,7 @@ public class BookingService(
     public async Task<BookingDto> Create(Guid eventId, CancellationToken cancellationToken = default)
     {
         var @event = await eventService.Get(eventId, cancellationToken);
-        var booking = new Booking(@event.Id, BookingStatus.Pending, dateTimeProvider.Now);
+        var booking = new Booking(@event.Id, BookingStatus.Pending, createdAt: dateTimeProvider.Now);
         await repository.Create(booking, cancellationToken);
 
         return booking.ToDto();
