@@ -12,8 +12,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
 {
     private Mock<IDateTimeProvider> DateTimeProviderMock => fixture.DateTimeProviderMock;
     private IBookingService BookingService => fixture.BookingService;
-    private List<Event> TestEvents => fixture.TestEvents;
-    private List<Booking> TestBookings => fixture.TestBookings;
+    private Event[] TestEvents => EventServiceFixture.TestEvents;
+    private Booking[] TestBookings => BookingServiceFixture.TestBookings;
     
     [Fact]
     public async Task Create_NewBooking_Success()
