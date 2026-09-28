@@ -25,7 +25,7 @@ public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : 
     {
         lock (_lock)
         {
-            return Task.FromResult(_repository.Values.AsEnumerable());
+            return Task.FromResult<IEnumerable<TEntity>>(_repository.Values.ToList());
         }
     }
 
