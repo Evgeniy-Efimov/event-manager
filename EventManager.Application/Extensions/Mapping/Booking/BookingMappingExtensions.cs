@@ -15,4 +15,9 @@ public static class BookingMappingExtensions
             booking.CreatedAt,
             booking.UpdatedAt);
     }
+
+    public static List<BookingDto> ToDtoList(this IEnumerable<BookingModel> bookings)
+    {
+        return bookings.Select(e => e.ToDto()).ToList();
+    }
 }

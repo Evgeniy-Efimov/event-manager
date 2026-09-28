@@ -9,7 +9,8 @@ public class BookingBackgroundService(
     ILogger<BookingBackgroundService> logger,
     IBookingService bookingService) : BackgroundService
 {
-    private static readonly TimeSpan ProcessingDelay = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan PollingDelay = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan BookingProcessingDelay = TimeSpan.FromSeconds(2);
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -19,12 +20,17 @@ public class BookingBackgroundService(
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var pendingBooking = await GetPendingBooking(cancellationToken);
+                var pendingBookings = await GetPendingBatch(cancellationToken);
 
-                if (pendingBooking != null)
-                    await ProcessPendingBooking(pendingBooking, cancellationToken);
+                if (pendingBookings.Count > 0)
+                {
+                    var tasks = pendingBookings.Select(
+                        booking => ProcessPendingBooking(booking, cancellationToken));
 
-                await Task.Delay(ProcessingDelay, cancellationToken);
+                    await Task.WhenAll(tasks);
+                }
+
+                await Task.Delay(PollingDelay, cancellationToken);
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -37,11 +43,11 @@ public class BookingBackgroundService(
         }
     }
 
-    private async Task<BookingDto?> GetPendingBooking(CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<BookingDto>> GetPendingBatch(CancellationToken cancellationToken)
     {
         try
         {
-            return await bookingService.GetPending(cancellationToken);
+            return await bookingService.GetPendingBatch(cancellationToken: cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -49,8 +55,8 @@ public class BookingBackgroundService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Get pending Booking error");
-            return null;
+            logger.LogError(ex, "Get pending Bookings error");
+            return [];
         }
     }
 
@@ -60,7 +66,7 @@ public class BookingBackgroundService(
         {
             logger.LogInformation("Start processing Booking '{BookingId}'", booking.Id);
 
-            await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+            await Task.Delay(BookingProcessingDelay, cancellationToken);
             await bookingService.Confirm(booking.Id, cancellationToken);
 
             logger.LogInformation("Booking '{BookingId}' confirmed", booking.Id);
@@ -69,9 +75,29 @@ public class BookingBackgroundService(
         {
             throw;
         }
+        catch (Exception processEx)
+        {
+            logger.LogError(processEx, "Process Booking '{BookingId}' error", booking.Id);
+
+            await RejectFailedBooking(booking.Id, cancellationToken);
+        }
+    }
+
+    private async Task RejectFailedBooking(Guid bookingId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await bookingService.Reject(bookingId, cancellationToken);
+
+            logger.LogInformation("Booking '{BookingId}' rejected after processing error", bookingId);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Process Booking '{BookingId}' error", booking.Id);
+            logger.LogError(ex,"Failed to reject Booking '{BookingId}' after processing error", bookingId);
         }
     }
 }
