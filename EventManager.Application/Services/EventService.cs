@@ -11,52 +11,51 @@ namespace EventManager.Application.Services;
 
 public class EventService(IRepository<Event> repository, IDateTimeProvider dateTimeProvider) : IEventService
 {
-    public async Task<EventDto> Get(Guid id, CancellationToken cancellationToken = default)
+    public async Task<EventDto> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return (await GetDomain(id, cancellationToken)).ToDto();
+        return (await GetDomainAsync(id, cancellationToken)).ToDto();
     }
 
-    public async Task<Event> GetDomain(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Event> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return (await repository.Get(id, cancellationToken))
+        return (await repository.GetAsync(id, cancellationToken))
             ?? throw new NotFoundException($"Event '{id}' not found");
     }
 
-    public async Task<PaginatedResultDto<EventDto>> GetList(EventsRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<PaginatedResultDto<EventDto>> GetListAsync(EventsRequestDto request, CancellationToken cancellationToken = default)
     {
-        var query = (await repository.GetList(cancellationToken)).ApplyFilters(request);
+        var query = (await repository.GetListAsync(cancellationToken)).ApplyFilters(request);
         var (page, pageSize, pageQuery) = query.ApplySorting().GetPage(request.Page, request.PageSize);
 
         return new PaginatedResultDto<EventDto>(query.Count(), page, pageSize, pageQuery.ToDtoArray());
     }
 
-    public async Task<EventDto> Create(CreateEventDto eventDto, CancellationToken cancellationToken = default)
+    public async Task<EventDto> CreateAsync(CreateEventDto eventDto, CancellationToken cancellationToken = default)
     {
         var @event = eventDto.ToDomain(dateTimeProvider.Now);
-        await repository.Create(@event, cancellationToken);
+        await repository.CreateAsync(@event, cancellationToken);
 
         return @event.ToDto();
     }
 
-    public async Task<EventDto> Update(UpdateEventDto eventDto, CancellationToken cancellationToken = default)
+    public async Task<EventDto> UpdateAsync(UpdateEventDto eventDto, CancellationToken cancellationToken = default)
     {
-        var @event = await GetDomain(eventDto.Id, cancellationToken);
+        var @event = await GetDomainAsync(eventDto.Id, cancellationToken);
         @event.Title = eventDto.Title;
         @event.Description = eventDto.Description;
         @event.StartAt = eventDto.StartAt ?? throw new ValidationException("StartAt required");
         @event.EndAt = eventDto.EndAt ?? throw new ValidationException("EndAt required");
-        @event.Title = eventDto.Title;
         @event.UpdatedAt = dateTimeProvider.Now;
 
-        if (!await repository.Update(@event, cancellationToken))
+        if (!await repository.UpdateAsync(@event, cancellationToken))
             throw new InvalidOperationException($"Failed to update event '{eventDto.Id}'");
 
         return @event.ToDto();
     }
 
-    public async Task Delete(Guid id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        if (!await repository.Delete(id, cancellationToken))
+        if (!await repository.DeleteAsync(id, cancellationToken))
             throw new NotFoundException($"Event '{id}' not found");
     }
 }

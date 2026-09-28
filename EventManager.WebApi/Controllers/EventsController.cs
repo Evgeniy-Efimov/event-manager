@@ -23,7 +23,7 @@ public class EventsController(IEventService eventService, IBookingService bookin
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
-        return Ok(await eventService.Get(id, cancellationToken));
+        return Ok(await eventService.GetAsync(id, cancellationToken));
     }
 
     /// <summary>
@@ -37,7 +37,7 @@ public class EventsController(IEventService eventService, IBookingService bookin
     [ProducesResponseType(typeof(PaginatedResultDto<EventDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetList([FromQuery]EventsRequestDto request, CancellationToken cancellationToken)
     {
-        return Ok(await eventService.GetList(request, cancellationToken));
+        return Ok(await eventService.GetListAsync(request, cancellationToken));
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public class EventsController(IEventService eventService, IBookingService bookin
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateEventDto eventDto, CancellationToken cancellationToken)
     {
-        var created = await eventService.Create(eventDto, cancellationToken);
+        var created = await eventService.CreateAsync(eventDto, cancellationToken);
 
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
@@ -77,7 +77,7 @@ public class EventsController(IEventService eventService, IBookingService bookin
             throw new ValidationException($"Event id mismatch, route: {id}, DTO: {eventDto.Id}");
         }
 
-        await eventService.Update(eventDto, cancellationToken);
+        await eventService.UpdateAsync(eventDto, cancellationToken);
 
         return NoContent();
     }
@@ -93,7 +93,7 @@ public class EventsController(IEventService eventService, IBookingService bookin
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        await eventService.Delete(id, cancellationToken);
+        await eventService.DeleteAsync(id, cancellationToken);
 
         return NoContent();
     }
@@ -110,7 +110,7 @@ public class EventsController(IEventService eventService, IBookingService bookin
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateBooking(Guid id, CancellationToken cancellationToken)
     {
-        var created = await bookingService.Create(id, cancellationToken);
+        var created = await bookingService.CreateAsync(id, cancellationToken);
         Response.Headers.Location = Url.Action(
             nameof(BookingsController.GetById),
             "Bookings",

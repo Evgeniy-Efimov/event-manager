@@ -20,6 +20,6 @@ public class BookingsController(IBookingService bookingService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
-        return Ok(await bookingService.Get(id, cancellationToken));
+        return Ok(await bookingService.GetAsync(id, cancellationToken));
     }
 }

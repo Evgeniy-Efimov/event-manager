@@ -4,9 +4,9 @@ namespace EventManager.Application.Services.Interfaces;
 
 public interface IBookingService
 {
-    Task<BookingDto> Get(Guid id, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<BookingDto>> GetPendingBatch(int? batchSize = null, CancellationToken cancellationToken = default);
-    Task<BookingDto> Create(Guid eventId, CancellationToken cancellationToken = default);
-    Task<BookingDto> Confirm(Guid id, CancellationToken cancellationToken = default);
-    Task<BookingDto> Reject(Guid id, CancellationToken cancellationToken = default);
+    Task<BookingDto> GetAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<BookingDto>> GetPendingBatchAsync(int? batchSize = null, CancellationToken cancellationToken = default);
+    Task<BookingDto> CreateAsync(Guid eventId, CancellationToken cancellationToken = default);
+    Task<BookingDto> ConfirmAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<BookingDto> RejectAsync(Guid id, CancellationToken cancellationToken = default);
 }

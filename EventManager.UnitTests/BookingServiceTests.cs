@@ -24,7 +24,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var eventId = TestEvents.First().Id;
 
         // Act
-        var result = await BookingService.Create(eventId);
+        var result = await BookingService.CreateAsync(eventId);
 
         // Assert
         Assert.NotNull(result);
@@ -47,7 +47,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var results = new List<BookingDto>();
 
         for (var i = 0; i < repetitions; i++)
-            results.Add(await BookingService.Create(eventId));
+            results.Add(await BookingService.CreateAsync(eventId));
 
         // Assert
         var uniqueIds = results.Select(r => r.Id).Distinct().ToArray();
@@ -62,7 +62,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var eventId = Guid.NewGuid();
 
         // Act
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() => BookingService.Create(eventId));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => BookingService.CreateAsync(eventId));
 
         // Assert
         Assert.NotNull(exception);
@@ -78,8 +78,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var bookingService = fixture.GetBookingService(eventService);
 
         // Act
-        await eventService.Delete(eventId);
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() => bookingService.Create(eventId));
+        await eventService.DeleteAsync(eventId);
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => bookingService.CreateAsync(eventId));
 
         // Assert
         Assert.NotNull(exception);
@@ -93,7 +93,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var existedBooking = TestBookings.First();
 
         // Act
-        var result = await BookingService.Get(existedBooking.Id);
+        var result = await BookingService.GetAsync(existedBooking.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -111,7 +111,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var notExistedId = Guid.NewGuid();
 
         // Act
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() => BookingService.Get(notExistedId));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => BookingService.GetAsync(notExistedId));
 
         // Assert
         Assert.NotNull(exception);
@@ -126,9 +126,9 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var bookingService = BookingService;
 
         // Act
-        var pedningBooking = await bookingService.Get(pedningBookingId);
-        await bookingService.Confirm(pedningBookingId);
-        var confirmedBooking = await bookingService.Get(pedningBookingId);
+        var pedningBooking = await bookingService.GetAsync(pedningBookingId);
+        await bookingService.ConfirmAsync(pedningBookingId);
+        var confirmedBooking = await bookingService.GetAsync(pedningBookingId);
 
         // Assert
         Assert.NotNull(pedningBooking);
@@ -145,9 +145,9 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var bookingService = BookingService;
 
         // Act
-        var pedningBooking = await bookingService.Get(pedningBookingId);
-        await bookingService.Reject(pedningBookingId);
-        var rejectedBooking = await bookingService.Get(pedningBookingId);
+        var pedningBooking = await bookingService.GetAsync(pedningBookingId);
+        await bookingService.RejectAsync(pedningBookingId);
+        var rejectedBooking = await bookingService.GetAsync(pedningBookingId);
 
         // Assert
         Assert.NotNull(pedningBooking);
@@ -169,7 +169,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         };
 
         // Act
-        var result = await BookingService.GetPendingBatch();
+        var result = await BookingService.GetPendingBatchAsync();
 
         // Assert
         Assert.NotNull(result);
@@ -186,7 +186,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var existedBooking = TestBookings.First();
 
         // Act
-        var result = await BookingService.Confirm(existedBooking.Id);
+        var result = await BookingService.ConfirmAsync(existedBooking.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -204,7 +204,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var notExistedId = Guid.NewGuid();
 
         // Act
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() => BookingService.Confirm(notExistedId));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => BookingService.ConfirmAsync(notExistedId));
 
         // Assert
         Assert.NotNull(exception);
@@ -218,7 +218,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var notPendingBooking = TestBookings.Single(b => b.Id == Guid.Parse("9a6c3e8b-5d1f-4b7a-2c9e-4f8b1d6a3c57"));
 
         // Act
-        var exception = await Assert.ThrowsAsync<ValidationException>(() => BookingService.Confirm(notPendingBooking.Id));
+        var exception = await Assert.ThrowsAsync<ValidationException>(() => BookingService.ConfirmAsync(notPendingBooking.Id));
 
         // Assert
         Assert.NotNull(exception);
@@ -234,7 +234,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var existedBooking = TestBookings.First();
 
         // Act
-        var result = await BookingService.Reject(existedBooking.Id);
+        var result = await BookingService.RejectAsync(existedBooking.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -252,7 +252,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var notExistedId = Guid.NewGuid();
 
         // Act
-        var exception = await Assert.ThrowsAsync<NotFoundException>(() => BookingService.Reject(notExistedId));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => BookingService.RejectAsync(notExistedId));
 
         // Assert
         Assert.NotNull(exception);
@@ -266,7 +266,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var notPendingBooking = TestBookings.Single(b => b.Id == Guid.Parse("9a6c3e8b-5d1f-4b7a-2c9e-4f8b1d6a3c57"));
 
         // Act
-        var exception = await Assert.ThrowsAsync<ValidationException>(() => BookingService.Reject(notPendingBooking.Id));
+        var exception = await Assert.ThrowsAsync<ValidationException>(() => BookingService.RejectAsync(notPendingBooking.Id));
 
         // Assert
         Assert.NotNull(exception);

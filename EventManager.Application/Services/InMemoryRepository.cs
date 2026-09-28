@@ -13,7 +13,7 @@ public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : 
         _repository = repository ?? [];
     }
 
-    public Task<TEntity?> Get(Guid id, CancellationToken cancellationToken = default)
+    public Task<TEntity?> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
@@ -21,7 +21,7 @@ public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : 
         }
     }
 
-    public Task<IEnumerable<TEntity>> GetList(CancellationToken cancellationToken = default)
+    public Task<IEnumerable<TEntity>> GetListAsync(CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
@@ -29,7 +29,7 @@ public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : 
         }
     }
 
-    public Task Create(TEntity entity, CancellationToken cancellationToken = default)
+    public Task CreateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
@@ -38,7 +38,7 @@ public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : 
         }
     }
 
-    public Task<bool> Update(TEntity entity, CancellationToken cancellationToken = default)
+    public Task<bool> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {
@@ -50,7 +50,7 @@ public class InMemoryRepository<TEntity> : IRepository<TEntity> where TEntity : 
         }
     }
 
-    public Task<bool> Delete(Guid id, CancellationToken cancellationToken = default)
+    public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         lock (_lock)
         {

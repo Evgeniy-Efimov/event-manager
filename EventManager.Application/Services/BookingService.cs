@@ -13,52 +13,52 @@ public class BookingService(
     IEventService eventService,
     IDateTimeProvider dateTimeProvider) : IBookingService
 {
-    public async Task<BookingDto> Get(Guid id, CancellationToken cancellationToken = default)
+    public async Task<BookingDto> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return (await GetDomain(id, cancellationToken)).ToDto();
+        return (await GetDomainAsync(id, cancellationToken)).ToDto();
     }
 
-    public async Task<Booking> GetDomain(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Booking> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return (await repository.Get(id, cancellationToken))
+        return (await repository.GetAsync(id, cancellationToken))
             ?? throw new NotFoundException($"Booking '{id}' not found");
     }
 
-    public async Task<IReadOnlyList<BookingDto>> GetPendingBatch(int? batchSize = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<BookingDto>> GetPendingBatchAsync(int? batchSize = null, CancellationToken cancellationToken = default)
     {
         batchSize ??= BookingConstants.DefaultPendingBatchSize;
 
-        return (await repository.GetList(cancellationToken))
+        return (await repository.GetListAsync(cancellationToken))
             .Where(b => b.Status == BookingStatus.Pending)
             .OrderBy(b => b.CreatedAt)
             .Take(batchSize.Value).ToDtoList();
     }
 
-    public async Task<BookingDto> Create(Guid eventId, CancellationToken cancellationToken = default)
+    public async Task<BookingDto> CreateAsync(Guid eventId, CancellationToken cancellationToken = default)
     {
-        var @event = await eventService.Get(eventId, cancellationToken);
+        var @event = await eventService.GetAsync(eventId, cancellationToken);
         var booking = new Booking(@event.Id, BookingStatus.Pending, createdAt: dateTimeProvider.Now);
-        await repository.Create(booking, cancellationToken);
+        await repository.CreateAsync(booking, cancellationToken);
 
         return booking.ToDto();
     }
 
-    public Task<BookingDto> Confirm(Guid id, CancellationToken cancellationToken = default) =>
-        Process(id, (booking) => booking.Confirm(dateTimeProvider.Now), cancellationToken);
+    public Task<BookingDto> ConfirmAsync(Guid id, CancellationToken cancellationToken = default) =>
+        ProcessAsync(id, (booking) => booking.Confirm(dateTimeProvider.Now), cancellationToken);
 
-    public Task<BookingDto> Reject(Guid id, CancellationToken cancellationToken = default) =>
-        Process(id, (booking) => booking.Reject(dateTimeProvider.Now), cancellationToken);
+    public Task<BookingDto> RejectAsync(Guid id, CancellationToken cancellationToken = default) =>
+        ProcessAsync(id, (booking) => booking.Reject(dateTimeProvider.Now), cancellationToken);
 
-    private async Task<BookingDto> Process(Guid id, Action<Booking> process, CancellationToken cancellationToken = default)
+    private async Task<BookingDto> ProcessAsync(Guid id, Action<Booking> process, CancellationToken cancellationToken = default)
     {
-        var booking = await GetDomain(id, cancellationToken);
+        var booking = await GetDomainAsync(id, cancellationToken);
 
         if (booking.Status != BookingStatus.Pending)
             throw new ValidationException($"Can't process booking in status '{booking.Status}'");
 
         process(booking);
 
-        if (!await repository.Update(booking, cancellationToken))
+        if (!await repository.UpdateAsync(booking, cancellationToken))
             throw new InvalidOperationException($"Failed to update booking '{booking.Id}'");
 
         return booking.ToDto();
