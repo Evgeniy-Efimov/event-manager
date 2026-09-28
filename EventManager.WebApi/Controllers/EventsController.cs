@@ -100,16 +100,16 @@ public class EventsController(IEventService eventService, IBookingService bookin
     /// <summary>
     /// Create booking for event
     /// </summary>
-    /// <param name="eventId">Event ID</param>
+    /// <param name="id">Event ID</param>
     /// <param name="cancellationToken"></param>
     /// <returns>Accepted 202 with booking ID and Location header</returns>
-    [HttpPost("{eventId}/book")]
+    [HttpPost("{id}/book")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CreateBooking(Guid eventId, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateBooking(Guid id, CancellationToken cancellationToken)
     {
-        var created = await bookingService.Create(eventId, cancellationToken);
+        var created = await bookingService.Create(id, cancellationToken);
         Response.Headers.Location = Url.Action(
             nameof(BookingsController.GetById),
             "Bookings",
