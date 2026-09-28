@@ -1,4 +1,5 @@
 ﻿using EventManager.Application.Models.DTO;
+using EventManager.Application.Models.DTO.Booking;
 using EventManager.Application.Models.DTO.Events;
 using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
@@ -105,7 +106,7 @@ public class EventsController(IEventService eventService, IBookingService bookin
     /// <returns>Accepted 202 with booking ID and Location header</returns>
     [HttpPost("{id}/book")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(BookingDto), StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateBooking(Guid id, CancellationToken cancellationToken)
     {
@@ -116,6 +117,6 @@ public class EventsController(IEventService eventService, IBookingService bookin
             new { id = created.Id },
             protocol: Request.Scheme);
 
-        return Accepted(new { created.Id, Status = created.Status.ToString() });
+        return Accepted(created);
     }
 }
