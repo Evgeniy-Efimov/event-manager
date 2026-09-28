@@ -16,7 +16,7 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
     private Event[] TestEvents => EventServiceFixture.TestEvents;
 
     [Fact]
-    public async Task Create_NewEvent_Success()
+    public async Task Create_NewEvent_ReturnsCreated()
     {
         // Arrange
         var createdAt = DateTime.UtcNow;
@@ -45,7 +45,7 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
     }
 
     [Fact]
-    public async Task GetById_ExistedEvent_Success()
+    public async Task GetById_ExistedEvent_ReturnsExpected()
     {
         // Arrange
         var existedEvent = TestEvents.First();
@@ -65,7 +65,7 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
     }
 
     [Fact]
-    public async Task GetById_NotExistedEvent_NotFoundException()
+    public async Task GetById_NotExistedEvent_ThrowsNotFoundException()
     {
         // Arrange
         var notExistedId = Guid.NewGuid();
@@ -79,7 +79,7 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
     }
 
     [Fact]
-    public async Task Update_ExistedEvent_Success()
+    public async Task Update_ExistedEvent_ReturnsUpdated()
     {
         // Arrange
         var updatedAt = DateTime.UtcNow;
@@ -110,7 +110,7 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
     }
 
     [Fact]
-    public async Task Update_NotExistedEvent_NotFoundException()
+    public async Task Update_NotExistedEvent_ThrowsNotFoundException()
     {
         // Arrange
         var notExistedEvent = new UpdateEventDto()
@@ -141,7 +141,7 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
     }
 
     [Fact]
-    public async Task Delete_NotExistedEvent_NotFoundException()
+    public async Task Delete_NotExistedEvent_ThrowsNotFoundException()
     {
         // Arrange
         var notExistedId = Guid.NewGuid();

@@ -7,8 +7,8 @@ namespace EventManager.UnitTests.Fixtures;
 
 public class BookingServiceFixture : EventServiceFixture
 {
-    public IBookingService BookingService => new BookingService(new InMemoryRepository<Booking>(
-        TestBookings.ToDictionary(b => b.Id)), EventService, DateTimeProvider);
+    public IBookingService GetBookingService(IEventService? eventService = null) => new BookingService(
+        new InMemoryRepository<Booking>(TestBookings.ToDictionary(b => b.Id)), eventService ?? EventService, DateTimeProvider);
 
     public static Booking[] TestBookings =>
     [

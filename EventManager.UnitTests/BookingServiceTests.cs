@@ -11,12 +11,12 @@ namespace EventManager.UnitTests;
 public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<BookingServiceFixture>
 {
     private Mock<IDateTimeProvider> DateTimeProviderMock => fixture.DateTimeProviderMock;
-    private IBookingService BookingService => fixture.BookingService;
+    private IBookingService BookingService => fixture.GetBookingService();
     private Event[] TestEvents => EventServiceFixture.TestEvents;
     private Booking[] TestBookings => BookingServiceFixture.TestBookings;
     
     [Fact]
-    public async Task Create_NewBooking_Success()
+    public async Task Create_ExistedEvent_ReturnsPending()
     {
         // Arrange
         var createdAt = DateTime.UtcNow;
@@ -37,7 +37,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task Create_OneEventMultipleBooking_UniqueIds()
+    public async Task Create_OneEventMultipleBooking_ReturnsUniqueIds()
     {
         // Arrange
         var repetitions = 5;
@@ -56,7 +56,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task Create_NewBooking_EventNotFoundException()
+    public async Task Create_EventNotFound_ThrowsNotFoundException()
     {
         // Arrange
         var eventId = Guid.NewGuid();
@@ -70,7 +70,24 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task GetById_ExistedBooking_Success()
+    public async Task Create_DeletedEvent_ThrowsNotFoundException()
+    {
+        // Arrange
+        var eventId = TestEvents.First().Id;
+        var eventService = fixture.EventService;
+        var bookingService = fixture.GetBookingService(eventService);
+
+        // Act
+        await eventService.Delete(eventId);
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => bookingService.Create(eventId));
+
+        // Assert
+        Assert.NotNull(exception);
+        Assert.Equal($"Event '{eventId}' not found", exception.Message);
+    }
+
+    [Fact]
+    public async Task GetById_ExistedBooking_ReturnsBooking()
     {
         // Arrange
         var existedBooking = TestBookings.First();
@@ -88,7 +105,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task GetById_NotExistedBooking_NotFoundException()
+    public async Task GetById_NotExistedBooking_ThrowsNotFoundException()
     {
         // Arrange
         var notExistedId = Guid.NewGuid();
@@ -102,7 +119,45 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task GetPending_ReturnsExpected()
+    public async Task GetById_ConfirmedBooking_ReturnsConfirmed()
+    {
+        // Arrange
+        var pedningBookingId = Guid.Parse("3f8a1c2e-9b4d-4e6a-8f1b-2c7d5e9a0b3f");
+        var bookingService = BookingService;
+
+        // Act
+        var pedningBooking = await bookingService.Get(pedningBookingId);
+        await bookingService.Confirm(pedningBookingId);
+        var confirmedBooking = await bookingService.Get(pedningBookingId);
+
+        // Assert
+        Assert.NotNull(pedningBooking);
+        Assert.Equal(BookingStatus.Pending.ToString(), pedningBooking.Status);
+        Assert.NotNull(confirmedBooking);
+        Assert.Equal(BookingStatus.Confirmed.ToString(), confirmedBooking.Status);
+    }
+
+    [Fact]
+    public async Task GetById_RejectedBooking_ReturnsRejected()
+    {
+        // Arrange
+        var pedningBookingId = Guid.Parse("3f8a1c2e-9b4d-4e6a-8f1b-2c7d5e9a0b3f");
+        var bookingService = BookingService;
+
+        // Act
+        var pedningBooking = await bookingService.Get(pedningBookingId);
+        await bookingService.Reject(pedningBookingId);
+        var rejectedBooking = await bookingService.Get(pedningBookingId);
+
+        // Assert
+        Assert.NotNull(pedningBooking);
+        Assert.Equal(BookingStatus.Pending.ToString(), pedningBooking.Status);
+        Assert.NotNull(rejectedBooking);
+        Assert.Equal(BookingStatus.Rejected.ToString(), rejectedBooking.Status);
+    }
+
+    [Fact]
+    public async Task GetPending_PendingBookingExists_ReturnsExpected()
     {
         // Arrange
         var expectedId = Guid.Parse("c4d8f1a6-3e7b-4c2d-8a5f-1b9e6d3c7a20");
@@ -117,7 +172,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task Confirm_ExistedBooking_Success()
+    public async Task Confirm_ExistedPendingBooking_ReturnsConfirmed()
     {
         // Arrange
         var processedAt = DateTime.UtcNow;
@@ -137,7 +192,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task Confirm_NotExistedBooking_NotFoundException()
+    public async Task Confirm_NotExistedBooking_ThrowsNotFoundException()
     {
         // Arrange
         var notExistedId = Guid.NewGuid();
@@ -151,7 +206,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task Confirm_NotPending_ValidationException()
+    public async Task Confirm_NonPendingBooking_ThrowsValidationException()
     {
         // Arrange
         var notPendingBooking = TestBookings.Single(b => b.Id == Guid.Parse("9a6c3e8b-5d1f-4b7a-2c9e-4f8b1d6a3c57"));
@@ -165,7 +220,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task Reject_ExistedBooking_Success()
+    public async Task Reject_ExistedPendingBooking_ReturnsRejected()
     {
         // Arrange
         var processedAt = DateTime.UtcNow;
@@ -185,7 +240,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task Reject_NotExistedBooking_NotFoundException()
+    public async Task Reject_NotExistedBooking_ThrowsNotFoundException()
     {
         // Arrange
         var notExistedId = Guid.NewGuid();
@@ -199,7 +254,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task Reject_NotPending_ValidationException()
+    public async Task Reject_NotPendingBooking_ThrowsValidationException()
     {
         // Arrange
         var notPendingBooking = TestBookings.Single(b => b.Id == Guid.Parse("9a6c3e8b-5d1f-4b7a-2c9e-4f8b1d6a3c57"));
