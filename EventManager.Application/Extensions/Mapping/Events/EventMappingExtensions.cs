@@ -1,7 +1,7 @@
 ﻿using EventManager.Application.Models.DTO.Events;
 using EventManager.Domain.Models;
 
-namespace EventManager.Application.Extensions.Mapping;
+namespace EventManager.Application.Extensions.Mapping.Events;
 
 public static class EventMappingExtensions
 {
@@ -12,12 +12,9 @@ public static class EventMappingExtensions
             @event.Title,
             @event.Description,
             @event.StartAt,
-            @event.EndAt);
-    }
-
-    public static List<EventDto> ToDtoList(this IEnumerable<Event> events)
-    {
-        return events.Select(e => e.ToDto()).ToList();
+            @event.EndAt,
+            @event.CreatedAt,
+            @event.UpdatedAt);
     }
 
     public static EventDto[] ToDtoArray(this IEnumerable<Event> events)
