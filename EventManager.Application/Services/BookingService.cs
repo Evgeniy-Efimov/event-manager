@@ -43,27 +43,20 @@ public class BookingService(
         return booking.ToDto();
     }
 
-    public Task<BookingDto> Confirm(Guid id, CancellationToken cancellationToken = default)
-    {
-        return Process(id, BookingStatus.Confirmed, cancellationToken);
-    }
+    public Task<BookingDto> Confirm(Guid id, CancellationToken cancellationToken = default) =>
+        Process(id, (booking) => booking.Confirm(dateTimeProvider.Now), cancellationToken);
 
-    public Task<BookingDto> Reject(Guid id, CancellationToken cancellationToken = default)
-    {
-        return Process(id, BookingStatus.Rejected, cancellationToken);
-    }
+    public Task<BookingDto> Reject(Guid id, CancellationToken cancellationToken = default) =>
+        Process(id, (booking) => booking.Reject(dateTimeProvider.Now), cancellationToken);
 
-    private async Task<BookingDto> Process(Guid id, BookingStatus status, CancellationToken cancellationToken = default)
+    private async Task<BookingDto> Process(Guid id, Action<Booking> process, CancellationToken cancellationToken = default)
     {
         var booking = await GetDomain(id, cancellationToken);
 
         if (booking.Status != BookingStatus.Pending)
             throw new ValidationException($"Can't process booking in status '{booking.Status}'");
 
-        var processedAt = dateTimeProvider.Now;
-        booking.Status = status;
-        booking.ProcessedAt = processedAt;
-        booking.UpdatedAt = processedAt;
+        process(booking);
 
         if (!await repository.Update(booking, cancellationToken))
             throw new InvalidOperationException($"Failed to update booking '{booking.Id}'");

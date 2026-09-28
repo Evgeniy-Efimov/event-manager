@@ -11,6 +11,17 @@ public class Booking(
     Guid? id = null) : BaseEntity(id, createdAt, updatedAt)
 {
     public Guid EventId { get; set; } = eventId;
-    public BookingStatus Status { get; set; } = status;
-    public DateTime? ProcessedAt { get; set; } = processedAt;
+    public BookingStatus Status { get; private set; } = status;
+    public DateTime? ProcessedAt { get; private set; } = processedAt;
+
+    public void Confirm(DateTime processedAt) => ChangeStatus(processedAt, BookingStatus.Confirmed);
+
+    public void Reject(DateTime processedAt) => ChangeStatus(processedAt, BookingStatus.Rejected);
+
+    private void ChangeStatus(DateTime processedAt, BookingStatus status)
+    {
+        Status = status;
+        ProcessedAt = processedAt;
+        UpdatedAt = processedAt;
+    }
 }
