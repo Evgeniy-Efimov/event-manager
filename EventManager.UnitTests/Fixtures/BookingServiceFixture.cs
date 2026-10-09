@@ -10,11 +10,9 @@ public class BookingServiceFixture : EventServiceFixture
 {
     public IBookingService GetBookingService(IEventService? eventService = null, IQueue<Booking>? bookingQueue = null) => new BookingService(
         new InMemoryRepository<Booking>(TestBookings.ToDictionary(b => b.Id)),
-        bookingQueue ?? GetBookingQueue(),
+        bookingQueue ?? new InMemoryQueue<Booking>(Channel.CreateUnbounded<Booking>()),
         eventService ?? EventService,
         DateTimeProvider);
-
-    public IQueue<Booking> GetBookingQueue() => new InMemoryQueue<Booking>(Channel.CreateUnbounded<Booking>());
 
     public static Booking[] TestBookings =>
     [
@@ -35,7 +33,7 @@ public class BookingServiceFixture : EventServiceFixture
             id: Guid.Parse("7b2e9d4a-1c5f-4a8b-9e3d-6f0a2b7c4d18")
         ),
         new (
-            eventId: Guid.Parse("c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f"),
+            eventId: Guid.Parse("b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e"),
             BookingStatus.Pending,
             processedAt: null,
             createdAt: Today.AddDays(-7),

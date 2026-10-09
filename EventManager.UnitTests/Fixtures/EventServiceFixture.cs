@@ -116,6 +116,7 @@ public class EventServiceFixture : BaseServiceFixture
             startAt: Today.AddDays(8),
             endAt: Today.AddDays(8).AddHours(2),
             totalSeats: 8000,
+            availableSeats: 7000,
             createdAt: Today.AddDays(8).AddDays(-12),
             updatedAt: Today.AddDays(8).AddDays(-5),
             id: Guid.Parse("d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a")
@@ -156,6 +157,7 @@ public class EventServiceFixture : BaseServiceFixture
             startAt: Today.AddHours(18),
             endAt: Today.AddHours(19.5),
             totalSeats: 40,
+            availableSeats: 0,
             createdAt: Today.AddHours(18).AddDays(-6),
             updatedAt: Today.AddHours(18).AddDays(-2),
             id: Guid.Parse("b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e")

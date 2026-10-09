@@ -7,5 +7,5 @@ public class CreateEventDto : BaseEventDto
 {
     [Required]
     [Range(1, EventConstants.MaxTotalSeats)]
-    public int TotalSeats { get; init; }
+    public int? TotalSeats { get; init; }
 }

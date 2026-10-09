@@ -13,7 +13,7 @@ public static class CreateEventDtoMappingExtensions
             eventDto.Description,
             eventDto.StartAt ?? throw new ValidationException("StartAt required"),
             eventDto.EndAt ?? throw new ValidationException("EndAt required"),
-            eventDto.TotalSeats,
+            eventDto.TotalSeats ?? throw new ValidationException("TotalSeats required"),
             createdAt: createdAt);
     }
 }

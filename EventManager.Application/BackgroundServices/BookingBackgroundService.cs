@@ -8,8 +8,7 @@ namespace EventManager.Application.BackgroundServices;
 
 public class BookingBackgroundService(
     ILogger<BookingBackgroundService> logger,
-    IBookingService bookingService,
-    IQueue<Booking> bookingQuery) : BackgroundService
+    IBookingService bookingService) : BackgroundService
 {
     private static readonly TimeSpan PollingDelay = TimeSpan.FromSeconds(
         BookingBackgroundServiceConstants.PollingDelaySeconds);
@@ -24,7 +23,7 @@ public class BookingBackgroundService(
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var batch = await GetBookingBatchAsync(cancellationToken);
+                var batch = await bookingService.GetPendingBookingsAsync(cancellationToken: cancellationToken);
 
                 if (batch.Count > 0)
                     await ProcessBookingBatchAsync(batch, cancellationToken);
@@ -40,23 +39,6 @@ public class BookingBackgroundService(
         {
             logger.LogError(ex, "BookingBackgroundService stopped due to error");
         }
-    }
-
-    private async ValueTask<IReadOnlyList<Booking>> GetBookingBatchAsync(CancellationToken cancellationToken)
-    {
-        var batch = new List<Booking>();
-
-        while (batch.Count < BookingBackgroundServiceConstants.BatchSize)
-        {
-            var booking = await bookingQuery.ReadAsync(cancellationToken);
-
-            if (booking is null)
-                break;
-
-            batch.Add(booking);
-        }
-
-        return batch;
     }
 
     private async Task ProcessBookingBatchAsync(IReadOnlyList<Booking> batch, CancellationToken cancellationToken)
