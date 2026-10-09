@@ -1,5 +1,4 @@
-﻿using EventManager.Application.Constants;
-using EventManager.Application.Extensions.Mapping.Booking;
+﻿using EventManager.Application.Extensions.Mapping.Booking;
 using EventManager.Application.Models.DTO.Booking;
 using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
@@ -10,6 +9,7 @@ namespace EventManager.Application.Services;
 
 public class BookingService(
     IRepository<Booking> repository,
+    IQueue<Booking> queue,
     IEventService eventService,
     IDateTimeProvider dateTimeProvider) : IBookingService
 {
@@ -24,21 +24,12 @@ public class BookingService(
             ?? throw new NotFoundException($"Booking '{id}' not found");
     }
 
-    public async Task<IReadOnlyList<BookingDto>> GetPendingBatchAsync(int? batchSize = null, CancellationToken cancellationToken = default)
-    {
-        batchSize ??= BookingConstants.DefaultPendingBatchSize;
-
-        return (await repository.GetListAsync(cancellationToken))
-            .Where(b => b.Status == BookingStatus.Pending)
-            .OrderBy(b => b.CreatedAt)
-            .Take(batchSize.Value).ToDtoList();
-    }
-
     public async Task<BookingDto> CreateAsync(Guid eventId, CancellationToken cancellationToken = default)
     {
         var @event = await eventService.GetAsync(eventId, cancellationToken);
         var booking = new Booking(@event.Id, BookingStatus.Pending, createdAt: dateTimeProvider.Now);
         await repository.CreateAsync(booking, cancellationToken);
+        await queue.EnqueueAsync(booking, cancellationToken);
 
         return booking.ToDto();
     }

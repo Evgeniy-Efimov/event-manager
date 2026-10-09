@@ -1,5 +1,6 @@
-﻿using EventManager.Application.Models.DTO.Booking;
+﻿using EventManager.Application.Constants;
 using EventManager.Application.Services.Interfaces;
+using EventManager.Domain.Models;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -7,10 +8,13 @@ namespace EventManager.Application.BackgroundServices;
 
 public class BookingBackgroundService(
     ILogger<BookingBackgroundService> logger,
-    IBookingService bookingService) : BackgroundService
+    IBookingService bookingService,
+    IQueue<Booking> bookingQuery) : BackgroundService
 {
-    private static readonly TimeSpan PollingDelay = TimeSpan.FromSeconds(1);
-    private static readonly TimeSpan BookingProcessingDelay = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan PollingDelay = TimeSpan.FromSeconds(
+        BookingBackgroundServiceConstants.PollingDelaySeconds);
+    private static readonly TimeSpan ProcessingDelay = TimeSpan.FromSeconds(
+        BookingBackgroundServiceConstants.ProcessingDelaySeconds);
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
@@ -20,15 +24,10 @@ public class BookingBackgroundService(
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                var pendingBookings = await GetPendingBatchAsync(cancellationToken);
+                var batch = await GetBookingBatchAsync(cancellationToken);
 
-                if (pendingBookings.Count > 0)
-                {
-                    var tasks = pendingBookings.Select(
-                        booking => ProcessPendingBookingAsync(booking, cancellationToken));
-
-                    await Task.WhenAll(tasks);
-                }
+                if (batch.Count > 0)
+                    await ProcessBookingBatchAsync(batch, cancellationToken);
 
                 await Task.Delay(PollingDelay, cancellationToken);
             }
@@ -43,30 +42,47 @@ public class BookingBackgroundService(
         }
     }
 
-    private async Task<IReadOnlyList<BookingDto>> GetPendingBatchAsync(CancellationToken cancellationToken)
+    private async ValueTask<IReadOnlyList<Booking>> GetBookingBatchAsync(CancellationToken cancellationToken)
     {
-        try
+        var batch = new List<Booking>();
+
+        while (batch.Count < BookingBackgroundServiceConstants.BatchSize)
         {
-            return await bookingService.GetPendingBatchAsync(cancellationToken: cancellationToken);
+            var booking = await bookingQuery.ReadAsync(cancellationToken);
+
+            if (booking is null)
+                break;
+
+            batch.Add(booking);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Get pending Bookings error");
-            return [];
-        }
+
+        return batch;
     }
 
-    private async Task ProcessPendingBookingAsync(BookingDto booking, CancellationToken cancellationToken)
+    private async Task ProcessBookingBatchAsync(IReadOnlyList<Booking> batch, CancellationToken cancellationToken)
+    {
+        logger.LogInformation("Start processing Bookings batch (size: {BatchSize})", batch.Count);
+
+        await Parallel.ForEachAsync(
+            batch,
+            new ParallelOptions
+            {
+                MaxDegreeOfParallelism = BookingBackgroundServiceConstants.MaxParallelTasksCount,
+                CancellationToken = cancellationToken
+            },
+            async (booking, token) =>
+            {
+                await ProcessBookingAsync(booking, token);
+            });
+    }
+
+    private async Task ProcessBookingAsync(Booking booking, CancellationToken cancellationToken)
     {
         try
         {
             logger.LogInformation("Start processing Booking '{BookingId}'", booking.Id);
 
-            await Task.Delay(BookingProcessingDelay, cancellationToken);
+            await Task.Delay(ProcessingDelay, cancellationToken);
             await bookingService.ConfirmAsync(booking.Id, cancellationToken);
 
             logger.LogInformation("Booking '{BookingId}' confirmed", booking.Id);

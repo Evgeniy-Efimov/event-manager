@@ -12,6 +12,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
 {
     private Mock<IDateTimeProvider> DateTimeProviderMock => fixture.DateTimeProviderMock;
     private IBookingService BookingService => fixture.GetBookingService();
+    private IQueue<Booking> BookingQueue => fixture.GetBookingQueue();
     private Event[] TestEvents => EventServiceFixture.TestEvents;
     private Booking[] TestBookings => BookingServiceFixture.TestBookings;
     
@@ -53,6 +54,39 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var uniqueIds = results.Select(r => r.Id).Distinct().ToArray();
         Assert.Equal(repetitions, results.Count);
         Assert.Equal(repetitions, uniqueIds.Length);
+    }
+
+    [Fact]
+    public async Task Create_MultipleBooking_QueueReturnsAllPending()
+    {
+        // Arrange
+        var bookingQueue = BookingQueue;
+        var bookingService = fixture.GetBookingService(bookingQueue: bookingQueue);
+        var bookingsCount = 5;
+        var eventId = TestEvents.First().Id;
+        var createdBookings = new List<BookingDto>();
+
+        for (var i = 0; i < bookingsCount; i++)
+            createdBookings.Add(await bookingService.CreateAsync(eventId));
+
+        // Act
+        var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var results = new List<Booking>();
+
+        while (!cancellationTokenSource.IsCancellationRequested)
+        {
+            var booking = await bookingQueue.ReadAsync(cancellationTokenSource.Token);
+
+            if (booking is null)
+                break;
+
+            results.Add(booking);
+        }
+
+        // Assert
+        Assert.Equal(bookingsCount, results.Count);
+        Assert.Equal(createdBookings.Select(b => b.Id).Order(), results.Select(r => r.Id).Order());
+        Assert.All(results, r => Assert.Equal(BookingStatus.Pending, r.Status));
     }
 
     [Fact]
@@ -154,27 +188,6 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         Assert.Equal(BookingStatus.Pending.ToString(), pedningBooking.Status);
         Assert.NotNull(rejectedBooking);
         Assert.Equal(BookingStatus.Rejected.ToString(), rejectedBooking.Status);
-    }
-
-    [Fact]
-    public async Task GetPending_PendingBookingExists_ReturnsExpected()
-    {
-        // Arrange
-        var expectedIds = new List<Guid>()
-        {
-            Guid.Parse("c4d8f1a6-3e7b-4c2d-8a5f-1b9e6d3c7a20"),
-            Guid.Parse("7b2e9d4a-1c5f-4a8b-9e3d-6f0a2b7c4d18"),
-            Guid.Parse("4c7f2a9e-6d1b-4e8a-3f5c-9b2e7d1a4f83"),
-            Guid.Parse("3f8a1c2e-9b4d-4e6a-8f1b-2c7d5e9a0b3f")
-        };
-
-        // Act
-        var result = await BookingService.GetPendingBatchAsync();
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(expectedIds, result.Select(r => r.Id).ToList());
-        Assert.All(result, r => Assert.Equal(BookingStatus.Pending.ToString(), r.Status));
     }
 
     [Fact]

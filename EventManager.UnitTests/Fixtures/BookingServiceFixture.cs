@@ -2,13 +2,19 @@
 using EventManager.Application.Services.Interfaces;
 using EventManager.Domain.Enums;
 using EventManager.Domain.Models;
+using System.Threading.Channels;
 
 namespace EventManager.UnitTests.Fixtures;
 
 public class BookingServiceFixture : EventServiceFixture
 {
-    public IBookingService GetBookingService(IEventService? eventService = null) => new BookingService(
-        new InMemoryRepository<Booking>(TestBookings.ToDictionary(b => b.Id)), eventService ?? EventService, DateTimeProvider);
+    public IBookingService GetBookingService(IEventService? eventService = null, IQueue<Booking>? bookingQueue = null) => new BookingService(
+        new InMemoryRepository<Booking>(TestBookings.ToDictionary(b => b.Id)),
+        bookingQueue ?? GetBookingQueue(),
+        eventService ?? EventService,
+        DateTimeProvider);
+
+    public IQueue<Booking> GetBookingQueue() => new InMemoryQueue<Booking>(Channel.CreateUnbounded<Booking>());
 
     public static Booking[] TestBookings =>
     [
