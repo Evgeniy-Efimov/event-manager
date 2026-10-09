@@ -1,4 +1,5 @@
 ﻿using EventManager.Application.Extensions.Mapping.Booking;
+using EventManager.Application.Extensions.Mapping.Events;
 using EventManager.Application.Models.DTO.Booking;
 using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
@@ -13,12 +14,14 @@ public class BookingService(
     IEventService eventService,
     IDateTimeProvider dateTimeProvider) : IBookingService
 {
+    private readonly SemaphoreSlim _eventSemaphore = new(1, 1);
+
     public async Task<BookingDto> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return (await GetDomainAsync(id, cancellationToken)).ToDto();
     }
 
-    public async Task<Booking> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
+    private async Task<Booking> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return (await repository.GetAsync(id, cancellationToken))
             ?? throw new NotFoundException($"Booking '{id}' not found");
@@ -26,24 +29,59 @@ public class BookingService(
 
     public async Task<BookingDto> CreateAsync(Guid eventId, CancellationToken cancellationToken = default)
     {
-        var @event = await eventService.GetAsync(eventId, cancellationToken);
-        var booking = new Booking(@event.Id, BookingStatus.Pending, createdAt: dateTimeProvider.Now);
+        var booking = new Booking(eventId, BookingStatus.Pending, createdAt: dateTimeProvider.Now);
+
+        await _eventSemaphore.WaitAsync(cancellationToken);
+        try
+        {
+            var @event = await eventService.GetDomainAsync(eventId, cancellationToken);
+
+            if (!@event.TryReserveSeats())
+                throw new NoAvailableSeatsException();
+
+            await eventService.UpdateAsync(@event, cancellationToken);
+        }
+        finally
+        {
+            _eventSemaphore.Release();
+        }
+
         await repository.CreateAsync(booking, cancellationToken);
         await queue.EnqueueAsync(booking, cancellationToken);
 
         return booking.ToDto();
     }
 
-    public Task<BookingDto> ConfirmAsync(Guid id, CancellationToken cancellationToken = default) =>
-        ProcessAsync(id, (booking) => booking.Confirm(dateTimeProvider.Now), cancellationToken);
-
-    public Task<BookingDto> RejectAsync(Guid id, CancellationToken cancellationToken = default) =>
-        ProcessAsync(id, (booking) => booking.Reject(dateTimeProvider.Now), cancellationToken);
-
-    private async Task<BookingDto> ProcessAsync(Guid id, Action<Booking> process, CancellationToken cancellationToken = default)
+    public async Task<BookingDto> ConfirmAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var booking = await GetDomainAsync(id, cancellationToken);
 
+        return await ProcessAsync(booking, (booking) => booking.Confirm(dateTimeProvider.Now), cancellationToken);
+    }
+
+    public async Task<BookingDto> RejectAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var booking = await GetDomainAsync(id, cancellationToken);
+        var result = await ProcessAsync(booking, (booking) => booking.Reject(dateTimeProvider.Now), cancellationToken);
+
+        await _eventSemaphore.WaitAsync(cancellationToken);
+        try
+        {
+            var @event = await eventService.GetDomainAsync(booking.EventId, cancellationToken);
+            @event.ReleaseSeats();
+
+            await eventService.UpdateAsync(@event, cancellationToken);
+        }
+        finally
+        {
+            _eventSemaphore.Release();
+        }
+
+        return result;
+    }
+
+    private async Task<BookingDto> ProcessAsync(Booking booking, Action<Booking> process, CancellationToken cancellationToken = default)
+    {
         if (booking.Status != BookingStatus.Pending)
             throw new ValidationException($"Can't process booking in status '{booking.Status}'");
 

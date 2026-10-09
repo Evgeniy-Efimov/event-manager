@@ -27,6 +27,12 @@ public class ExceptionHandler(ILogger<ExceptionHandler> logger) : IExceptionHand
                 Detail = validationException.Message,
                 Instance = httpContext.Request.Path
             },
+            NoAvailableSeatsException noAvailableSeatsException => new ValidationProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = noAvailableSeatsException.Message,
+                Instance = httpContext.Request.Path
+            },
             _ => new ProblemDetails
             {
                 Status = StatusCodes.Status500InternalServerError,
