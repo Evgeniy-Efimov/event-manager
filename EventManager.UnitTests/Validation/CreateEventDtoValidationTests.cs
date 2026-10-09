@@ -22,7 +22,8 @@ public class CreateEventDtoValidationTests : ValidationTestBase
         {
             Title = title!,
             StartAt = DateTime.UtcNow,
-            EndAt = DateTime.UtcNow.AddHours(1)
+            EndAt = DateTime.UtcNow.AddHours(1),
+            TotalSeats = 1
         };
 
         // Act
@@ -49,7 +50,8 @@ public class CreateEventDtoValidationTests : ValidationTestBase
             Title = "Event",
             Description = description,
             StartAt = DateTime.UtcNow,
-            EndAt = DateTime.UtcNow.AddHours(1)
+            EndAt = DateTime.UtcNow.AddHours(1),
+            TotalSeats = 1
         };
 
         // Act
@@ -76,7 +78,8 @@ public class CreateEventDtoValidationTests : ValidationTestBase
         {
             Title = "Event",
             StartAt = startAt,
-            EndAt = endAt
+            EndAt = endAt,
+            TotalSeats = 1
         };
 
         // Act

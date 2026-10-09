@@ -1,27 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using EventManager.Application.Constants;
+using System.ComponentModel.DataAnnotations;
 
 namespace EventManager.Application.Models.DTO.Events;
 
-public class CreateEventDto : IValidatableObject
+public class CreateEventDto : BaseEventDto
 {
     [Required]
-    [StringLength(100, MinimumLength = 1)]
-    public required string Title { get; init; }
-
-    [StringLength(300)]
-    public string? Description { get; init; }
-
-    [Required]
-    public DateTime? StartAt { get; init; }
-
-    [Required]
-    public DateTime? EndAt { get; init; }
-
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        if (EndAt <= StartAt)
-        {
-            yield return new ValidationResult("EndAt must be greater than StartAt", [nameof(EndAt)]);
-        }
-    }
+    [Range(1, EventConstants.MaxTotalSeats)]
+    public int TotalSeats { get; init; }
 }
