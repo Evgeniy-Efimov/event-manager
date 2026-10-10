@@ -31,6 +31,7 @@ public class ExceptionHandler(ILogger<ExceptionHandler> logger) : IExceptionHand
             {
                 Status = StatusCodes.Status409Conflict,
                 Title = noAvailableSeatsException.Message,
+                Detail = noAvailableSeatsException.Details,
                 Instance = httpContext.Request.Path
             },
             _ => new ProblemDetails

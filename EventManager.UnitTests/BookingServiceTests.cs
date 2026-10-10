@@ -116,7 +116,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
 
         // Assert
         Assert.NotNull(exception);
-        Assert.Equal("No available seats for this event", exception.Message);
+        Assert.Equal("No available seats", exception.Message);
+        Assert.Equal($"No available seats for event '{@event.Id}'", exception.Details);
         Assert.Equal(0, availableSeatsList.Last());
         Assert.Equal(Enumerable.Range(0, bookingsCount).Reverse(), availableSeatsList);
     }
@@ -132,7 +133,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
 
         // Assert
         Assert.NotNull(exception);
-        Assert.Equal("No available seats for this event", exception.Message);
+        Assert.Equal("No available seats", exception.Message);
+        Assert.Equal($"No available seats for event '{eventId}'", exception.Details);
     }
 
     [Fact]

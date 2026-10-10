@@ -6,13 +6,53 @@ ASP.NET Core Web API сервис для управления мероприят
 
 Сервис предоставляет RESTful API для управления мероприятиями с базовыми CRUD-операциями
 
-- Создание новых мероприятий с основной информацией (заголовок, описание, время)
+- Создание новых мероприятий с основной информацией (заголовок, описание, время, количество мест)
 - Обновление существующих мероприятий
 - Удаление мероприятий
 - Создание бронирования для мероприятия
 - Swagger документация
 
 Обработка бронирований выполняется в фоновом режиме с использованием BackgroundService
+
+### Модели и перечисления
+
+#### Event
+
+| Поле           | Тип      | Описание                           |
+| -------------- | -------- | ---------------------------------- |
+| Id             | Guid     | ID мероприятия                     |
+| Title          | string   | Заголовок                          |
+| Description    | string?  | Описание                           |
+| StartAt        | DateTime | Дата и время начала                |
+| EndAt          | DateTime | Дата и время окончания             |
+| TotalSeats     | int      | Общее количество мест              |
+| AvailableSeats | int      | Количество свободных мест          |
+| CreatedAt      | DateTime | Дата и время создания              |
+| UpdatedAt      | DateTime | Дата и время последнего обновления |
+
+Поле `TotalSeats` задается при создании мероприятия (обязательное, от 1 до 100000)  
+При создании `AvailableSeats` инициализируется значением `TotalSeats`  
+Каждое созданное бронирование уменьшает `AvailableSeats` на 1, при отклонении бронирования место возвращается  
+Обновить `TotalSeats` и `AvailableSeats` вручную нельзя
+
+#### Booking
+
+| Поле        | Тип           | Описание                            |
+| ----------- | ------------- | ----------------------------------- |
+| Id          | Guid          | ID бронирования                     |
+| EventId     | Guid          | ID мероприятия                      |
+| Status      | BookingStatus | Статус бронирования                 |
+| ProcessedAt | DateTime?     | Дата и время обработки бронирования |
+| CreatedAt   | DateTime      | Дата и время создания               |
+| UpdatedAt   | DateTime      | Дата и время последнего обновления  |
+
+#### Статусы бронирования (BookingStatus)
+
+| Статус    | Описание                                                  |
+| --------- | --------------------------------------------------------- |
+| Pending   | Бронирование создано и ожидает обработки в фоновом режиме |
+| Confirmed | Бронирование подтверждено                                 |
+| Rejected  | Бронирование отклонено                                    |
 
 ### Примеры запросов и ответов
 
@@ -33,6 +73,8 @@ GET http://localhost:5226/api/events/8f3ac62f-c330-4971-87b3-6d4fa2dc72d0
   "description": "Event1 details",
   "startAt": "2026-09-15T10:00:00Z",
   "endAt": "2026-09-15T17:00:00Z",
+  "totalSeats": 100,
+  "availableSeats": 99,
   "createdAt": "2026-09-26T14:38:49.45Z",
   "updatedAt": "2026-09-26T14:38:49.45Z"
 }
@@ -70,6 +112,8 @@ GET http://localhost:5226/api/events?Page=1&PageSize=10&Title=Event&From=2026-09
       "description": "Event2 details",
       "startAt": "2026-09-16T14:00:00Z",
       "endAt": "2026-09-16T15:30:00Z",
+      "totalSeats": 50,
+      "availableSeats": 50,
       "createdAt": "2026-09-26T14:38:59.86Z",
       "updatedAt": "2026-09-26T14:38:59.86Z"
     },
@@ -79,6 +123,8 @@ GET http://localhost:5226/api/events?Page=1&PageSize=10&Title=Event&From=2026-09
       "description": "Event1 details",
       "startAt": "2026-09-15T10:00:00Z",
       "endAt": "2026-09-15T17:00:00Z",
+      "totalSeats": 100,
+      "availableSeats": 99,
       "createdAt": "2026-09-26T14:38:49.45Z",
       "updatedAt": "2026-09-26T14:38:49.45Z"
     }
@@ -99,7 +145,8 @@ POST http://localhost:5226/api/events
   "title": "Event3",
   "description": "Event3 description",
   "startAt": "2026-10-01T09:00:00Z",
-  "endAt": "2026-10-01T11:00:00Z"
+  "endAt": "2026-10-01T11:00:00Z",
+  "totalSeats": 75
 }
 ```
 
@@ -112,6 +159,8 @@ POST http://localhost:5226/api/events
   "description": "Event3 description",
   "startAt": "2026-10-01T09:00:00Z",
   "endAt": "2026-10-01T11:00:00Z",
+  "totalSeats": 75,
+  "availableSeats": 75,
   "createdAt": "2026-09-26T14:37:04.29Z",
   "updatedAt": "2026-09-26T14:37:04.29Z"
 }
@@ -144,6 +193,17 @@ POST http://localhost:5226/api/events/a4d47004-9eaf-4bdb-9ac5-32a9b79e7e71/book
 Location: http://localhost:5226/api/bookings/d4bbbd9f-80b6-42bf-9c3b-b23cea931709
 ```
 
+**Ответ `409 Conflict` (если свободных мест нет):**
+
+```json
+{
+  "title": "No available seats",
+  "status": 409,
+  "detail": "No available seats for event 'ce425271-33e0-4fb4-b91c-ca27fc28f66d'",
+  "instance": "/api/events/ce425271-33e0-4fb4-b91c-ca27fc28f66d/book"
+}
+```
+
 #### Получение бронирования по ID
 
 **Запрос:**
@@ -171,36 +231,32 @@ GET http://localhost:5226/api/bookings/d4bbbd9f-80b6-42bf-9c3b-b23cea931709
 {
   "title": "Resource not found",
   "status": 404,
-  "detail": "Event '3fa85f64-5717-4562-b3fc-2c963f66afa6' not found"
+  "detail": "Event '3fa85f64-5717-4562-b3fc-2c963f66afa6' not found",
+  "instance": "/api/events/3fa85f64-5717-4562-b3fc-2c963f66afa6"
 }
 ```
 
-| Поле   | Тип     | Описание                         |
-| ------ | ------- | -------------------------------- |
-| title  | string  | Сообщение об ошибке              |
-| status | int     | HTTP код ответа                  |
-| detail | string? | Описание ошибки                  |
+| Поле     | Тип     | Описание                         |
+| -------- | ------- | -------------------------------- |
+| title    | string  | Сообщение об ошибке              |
+| status   | int     | HTTP код ответа                  |
+| detail   | string? | Описание ошибки                  |
+| instance | string  | URI запроса, вызвавшего ошибку   |
+
+### Потокобезопасность и примитивы синхронизации
+
+Сервис обрабатывает входящие запросы параллельно  
+Фоновый сервис подтверждения бронирований получает записи пачками, элементы пачки также обрабатываются параллельно  
+Для корректной работы с разделяемыми ресурсами используются примитивы синхронизации
+
+| Примитив                                       | Где используется            | Назначение                                           |
+| ---------------------------------------------- | --------------------------- | ---------------------------------------------------- |
+| ConcurrentDictionary<Guid, TEntity>            | InMemoryRepository<TEntity> | Безопасное чтение и запись из разных потоков         |
+| SemaphoreSlim(1, 1)                            | BookingService              | Атомарная проверка + изменение счетчика мест         |
+| Channel<TEntity>                               | InMemoryQueue<TEntity>      | Потокобезопасная очередь ожидающих бронирований      |
+| Parallel.ForEachAsync + MaxDegreeOfParallelism | BookingBackgroundService    | Ограничение степени параллелизма при обработке пачки |
 
 ### Работа с бронированием мероприятий
-
-#### Модель Booking
-
-| Поле        | Тип           | Описание                            |
-| ----------- | ------------- | ----------------------------------- |
-| Id          | Guid          | ID бронирования                     |
-| EventId     | Guid          | ID мероприятия                      |
-| Status      | BookingStatus | Статус бронирования                 |
-| ProcessedAt | DateTime?     | Дата и время обработки бронирования |
-| CreatedAt   | DateTime      | Дата и время создания               |
-| UpdatedAt   | DateTime      | Дата и время последнего обновления  |
-
-#### Статусы бронирования (BookingStatus)
-
-| Статус    | Описание                                                  |
-| --------- | --------------------------------------------------------- |
-| Pending   | Бронирование создано и ожидает обработки в фоновом режиме |
-| Confirmed | Бронирование подтверждено                                 |
-| Rejected  | Бронирование отклонено                                    |
 
 #### Логика фоновой обработки бронирований
 
@@ -228,8 +284,8 @@ POST http://localhost:5226/api/events/a4d47004-9eaf-4bdb-9ac5-32a9b79e7e71/book
   "eventId": "a4d47004-9eaf-4bdb-9ac5-32a9b79e7e71",
   "status": "Pending",
   "processedAt": null,
-  "createdAt": "2026-09-28T15:12:57.43Z",
-  "updatedAt": "2026-09-28T15:12:57.43Z"
+  "createdAt": "2026-09-26T14:35:11.15Z",
+  "updatedAt": "2026-09-26T14:35:11.15Z"
 }
 ```
 
@@ -264,6 +320,50 @@ GET http://localhost:5226/api/bookings/d4bbbd9f-80b6-42bf-9c3b-b23cea931709
 ```
 
 Статус изменился на `Confirmed`, а `processedAt` содержит дату и время подтверждения
+
+#### Пример сценария овербукинга
+
+На примере мероприятия с `totalSeats: 1` и `availableSeats: 1`
+
+**1. Создание первого бронирования**
+
+```http
+POST http://localhost:5226/api/events/1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d/book
+```
+
+Ответ `202 Accepted`:
+
+```json
+{
+  "id": "d4bbbd9f-80b6-42bf-9c3b-b23cea931709",
+  "eventId": "1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d",
+  "status": "Pending",
+  "processedAt": null,
+  "createdAt": "2026-09-28T15:12:57.43Z",
+  "updatedAt": "2026-09-28T15:12:57.43Z"
+}
+```
+
+В момент создания бронирования `availableSeats` уменьшается до 0
+
+**2. Создание второго бронирования (мест нет)**
+
+```http
+POST http://localhost:5226/api/events/1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d/book
+```
+
+Ответ `409 Conflict`:
+
+```json
+{
+  "title": "No available seats",
+  "status": 409,
+  "detail": "No available seats for event '1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d'",
+  "instance": "/api/events/1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d/book"
+}
+```
+
+Бронирование не создается
 
 ## Технологии и архитектура
 

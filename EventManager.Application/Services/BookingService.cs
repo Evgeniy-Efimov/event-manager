@@ -57,7 +57,7 @@ public class BookingService(
             var @event = await eventService.GetDomainAsync(eventId, cancellationToken);
 
             if (!@event.TryReserveSeats())
-                throw new NoAvailableSeatsException();
+                throw new NoAvailableSeatsException(eventId);
 
             await eventService.UpdateAsync(@event, cancellationToken);
         }
