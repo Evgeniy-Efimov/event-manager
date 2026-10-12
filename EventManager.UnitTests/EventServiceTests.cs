@@ -27,7 +27,8 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
             Title = "New event",
             Description = "About new event",
             StartAt = EventServiceFixture.Today.AddHours(9),
-            EndAt = EventServiceFixture.Today.AddHours(10)
+            EndAt = EventServiceFixture.Today.AddHours(10),
+            TotalSeats = 100
         };
 
         // Act
@@ -40,6 +41,8 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
         Assert.Equal(newEvent.Description, result.Description);
         Assert.Equal(newEvent.StartAt, result.StartAt);
         Assert.Equal(newEvent.EndAt, result.EndAt);
+        Assert.Equal(newEvent.TotalSeats, result.TotalSeats);
+        Assert.Equal(newEvent.TotalSeats, result.AvailableSeats);
         Assert.Equal(createdAt, result.CreatedAt);
         Assert.Equal(createdAt, result.UpdatedAt);
     }
@@ -60,6 +63,8 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
         Assert.Equal(existedEvent.Description, result.Description);
         Assert.Equal(existedEvent.StartAt, result.StartAt);
         Assert.Equal(existedEvent.EndAt, result.EndAt);
+        Assert.Equal(existedEvent.TotalSeats, result.TotalSeats);
+        Assert.Equal(existedEvent.AvailableSeats, result.AvailableSeats);
         Assert.Equal(existedEvent.CreatedAt, result.CreatedAt);
         Assert.Equal(existedEvent.UpdatedAt, result.UpdatedAt);
     }
@@ -105,6 +110,8 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
         Assert.Equal(updatedEvent.Description, result.Description);
         Assert.Equal(updatedEvent.StartAt, result.StartAt);
         Assert.Equal(updatedEvent.EndAt, result.EndAt);
+        Assert.Equal(existedEvent.TotalSeats, result.TotalSeats);
+        Assert.Equal(existedEvent.AvailableSeats, result.AvailableSeats);
         Assert.Equal(existedEvent.CreatedAt, result.CreatedAt);
         Assert.Equal(updatedAt, result.UpdatedAt);
     }

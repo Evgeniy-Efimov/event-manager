@@ -58,3 +58,19 @@ nunit-*.xml
 
 # IDE-specific
 .vs/
+
+# AI / LLM specific
+.kilo/
+.kilocodeignore
+.kiloignore
+.claude/
+.claude-sessions/
+.cursor/
+.cursorrules
+.aider*
+.aider.chat.history.md
+.copilot/
+.continue/
+.windsurf/
+.codeium/
+.tabnine/

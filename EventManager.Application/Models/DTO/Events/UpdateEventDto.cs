@@ -2,7 +2,7 @@
 
 namespace EventManager.Application.Models.DTO.Events;
 
-public class UpdateEventDto : CreateEventDto
+public class UpdateEventDto : BaseEventDto
 {
     [Required]
     public required Guid Id { get; init; }

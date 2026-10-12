@@ -6,6 +6,8 @@ public record EventDto(
     string? Description,
     DateTime StartAt,
     DateTime EndAt,
+    int TotalSeats,
+    int AvailableSeats,
     DateTime CreatedAt,
     DateTime UpdatedAt
 );

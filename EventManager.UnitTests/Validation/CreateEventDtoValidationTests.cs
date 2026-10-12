@@ -1,4 +1,5 @@
-﻿using EventManager.Application.Models.DTO.Events;
+﻿using EventManager.Application.Constants;
+using EventManager.Application.Models.DTO.Events;
 
 namespace EventManager.UnitTests.Validation;
 
@@ -22,7 +23,8 @@ public class CreateEventDtoValidationTests : ValidationTestBase
         {
             Title = title!,
             StartAt = DateTime.UtcNow,
-            EndAt = DateTime.UtcNow.AddHours(1)
+            EndAt = DateTime.UtcNow.AddHours(1),
+            TotalSeats = 1
         };
 
         // Act
@@ -49,7 +51,8 @@ public class CreateEventDtoValidationTests : ValidationTestBase
             Title = "Event",
             Description = description,
             StartAt = DateTime.UtcNow,
-            EndAt = DateTime.UtcNow.AddHours(1)
+            EndAt = DateTime.UtcNow.AddHours(1),
+            TotalSeats = 1
         };
 
         // Act
@@ -76,7 +79,39 @@ public class CreateEventDtoValidationTests : ValidationTestBase
         {
             Title = "Event",
             StartAt = startAt,
-            EndAt = endAt
+            EndAt = endAt,
+            TotalSeats = 1
+        };
+
+        // Act
+        var validationResults = Validate(eventDto);
+
+        // Assert
+        AssertValidationResults(expectedErrors, validationResults);
+    }
+
+    public static IEnumerable<object?[]> Validate_TotalSeats_ReturnsExpected_TestData() =>
+    [
+        [1, Array.Empty<string>()],
+        [EventConstants.MaxTotalSeats, Array.Empty<string>()],
+        [-1, new string[] { $"The field TotalSeats must be between 1 and {EventConstants.MaxTotalSeats}." }],
+        [0, new string[] { $"The field TotalSeats must be between 1 and {EventConstants.MaxTotalSeats}." }],
+        [EventConstants.MaxTotalSeats + 1, new string[] { $"The field TotalSeats must be between 1 and {EventConstants.MaxTotalSeats}." }],
+        [null, new string[] { "The TotalSeats field is required." }],
+    ];
+
+    [Theory]
+    [MemberData(nameof(Validate_TotalSeats_ReturnsExpected_TestData))]
+    public void Validate_TotalSeats_ReturnsExpected(int? totalSeats, string[] expectedErrors)
+    {
+        // Arrange
+        var eventDto = new CreateEventDto
+        {
+            Title = "Event",
+            Description = "Description",
+            StartAt = DateTime.UtcNow,
+            EndAt = DateTime.UtcNow.AddHours(1),
+            TotalSeats = totalSeats
         };
 
         // Act

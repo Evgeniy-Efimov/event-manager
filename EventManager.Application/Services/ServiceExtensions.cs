@@ -2,6 +2,7 @@
 using EventManager.Application.Services.Interfaces;
 using EventManager.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Channels;
 
 namespace EventManager.Application.Services;
 
@@ -9,16 +10,24 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddEventManager(this IServiceCollection services)
     {
-        services.AddSingleton<IDateTimeProvider, UtcDateTimeProvider>();
+        return services
+            .AddSingleton<IDateTimeProvider, UtcDateTimeProvider>()
 
-        services.AddSingleton<IRepository<Event>, InMemoryRepository<Event>>();
-        services.AddSingleton<IRepository<Booking>, InMemoryRepository<Booking>>();
+            .AddSingleton<IRepository<Event>, InMemoryRepository<Event>>()
+            .AddSingleton<IRepository<Booking>, InMemoryRepository<Booking>>()
+            .AddInMemoryQueue<Booking>()
+            .AddSingleton<ILockProvider<Event>, SemaphoreLockProvider<Event>>()
 
-        services.AddSingleton<IEventService, EventService>();
-        services.AddSingleton<IBookingService, BookingService>();
+            .AddSingleton<IEventService, EventService>()
+            .AddSingleton<IBookingService, BookingService>()
 
-        services.AddHostedService<BookingBackgroundService>();
+            .AddHostedService<BookingBackgroundService>();
+    }
 
-        return services;
+    private static IServiceCollection AddInMemoryQueue<TEntity>(this IServiceCollection services) where TEntity : BaseEntity
+    {
+        return services
+            .AddSingleton(Channel.CreateUnbounded<TEntity>())
+            .AddSingleton<IQueue<TEntity>, InMemoryQueue<TEntity>>();
     }
 }
