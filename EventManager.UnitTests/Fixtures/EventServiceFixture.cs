@@ -11,8 +11,10 @@ public class EventServiceFixture : BaseServiceFixture
         Assert.Equal(TestEventsCount, TestEvents.Length);
     }
 
-    public IEventService EventService => new EventService(new InMemoryRepository<Event>(
-        TestEvents.ToDictionary(e => e.Id)), DateTimeProvider);
+    public IEventService EventService => new EventService(
+        new InMemoryRepository<Event>(TestEvents.ToDictionary(e => e.Id)),
+        new SemaphoreLockProvider<Event>(),
+        DateTimeProvider);
 
     public static readonly DateTime Today = DateTime.Today;
 

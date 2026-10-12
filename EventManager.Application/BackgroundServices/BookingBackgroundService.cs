@@ -75,19 +75,17 @@ public class BookingBackgroundService(
         }
         catch (Exception processEx)
         {
-            logger.LogError(processEx, "Process Booking '{BookingId}' error", booking.Id);
-
-            await RejectFailedBookingAsync(booking.Id, cancellationToken);
+            await RejectFailedBookingAsync(booking.Id, processEx, cancellationToken);
         }
     }
 
-    private async Task RejectFailedBookingAsync(Guid bookingId, CancellationToken cancellationToken)
+    private async Task RejectFailedBookingAsync(Guid bookingId, Exception processEx, CancellationToken cancellationToken)
     {
         try
         {
             await bookingService.RejectAsync(bookingId, cancellationToken);
 
-            logger.LogInformation("Booking '{BookingId}' rejected after processing error", bookingId);
+            logger.LogWarning(processEx, "Booking '{BookingId}' rejected after processing error", bookingId);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {

@@ -6,17 +6,18 @@ using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
 using EventManager.Domain.Enums;
 using EventManager.Domain.Models;
+using Microsoft.Extensions.Logging;
 
 namespace EventManager.Application.Services;
 
 public class BookingService(
     IRepository<Booking> repository,
     IQueue<Booking> queue,
+    ILockProvider<Event> eventLock,
     IEventService eventService,
-    IDateTimeProvider dateTimeProvider) : IBookingService
+    IDateTimeProvider dateTimeProvider,
+    ILogger<BookingService> logger) : IBookingService
 {
-    private readonly SemaphoreSlim _eventSemaphore = new(1, 1);
-
     public async Task<BookingDto> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return (await GetDomainAsync(id, cancellationToken)).ToDto();
@@ -51,25 +52,55 @@ public class BookingService(
     {
         var booking = new Booking(eventId, BookingStatus.Pending, createdAt: dateTimeProvider.Now);
 
-        await _eventSemaphore.WaitAsync(cancellationToken);
-        try
+        await using (await eventLock.LockAsync(cancellationToken))
         {
             var @event = await eventService.GetDomainAsync(eventId, cancellationToken);
 
             if (!@event.TryReserveSeats())
-                throw new NoAvailableSeatsException(eventId);
+                throw new NoAvailableSeatsException();
 
-            await eventService.UpdateAsync(@event, cancellationToken);
-        }
-        finally
-        {
-            _eventSemaphore.Release();
-        }
+            await eventService.UpdateWithoutLockAsync(@event, cancellationToken);
 
-        await repository.CreateAsync(booking, cancellationToken);
-        await queue.EnqueueAsync(booking, cancellationToken);
+            try
+            {
+                await repository.CreateAsync(booking, cancellationToken);
+            }
+            catch
+            {
+                await TryRollbackBookingAsync(@event);
+                throw;
+            }
+
+            try
+            {
+                await queue.EnqueueAsync(booking, cancellationToken);
+            }
+            catch
+            {
+                await TryRollbackBookingAsync(@event, booking);
+                throw;
+            }
+        }
 
         return booking.ToDto();
+    }
+
+    private async Task TryRollbackBookingAsync(Event @event, Booking? booking = null)
+    {
+        try
+        {
+            if (booking != null)
+            {
+                await repository.DeleteAsync(booking.Id);
+            }
+
+            @event.ReleaseSeats();
+            await eventService.UpdateWithoutLockAsync(@event);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to rollback seats for event {EventId}", @event.Id);
+        }
     }
 
     public async Task<BookingDto> ConfirmAsync(Guid id, CancellationToken cancellationToken = default)
@@ -84,17 +115,11 @@ public class BookingService(
         var booking = await GetDomainAsync(id, cancellationToken);
         var result = await ProcessAsync(booking, (booking) => booking.Reject(dateTimeProvider.Now), cancellationToken);
 
-        await _eventSemaphore.WaitAsync(cancellationToken);
-        try
+        await using (await eventLock.LockAsync(cancellationToken))
         {
             var @event = await eventService.GetDomainAsync(booking.EventId, cancellationToken);
             @event.ReleaseSeats();
-
-            await eventService.UpdateAsync(@event, cancellationToken);
-        }
-        finally
-        {
-            _eventSemaphore.Release();
+            await eventService.UpdateWithoutLockAsync(@event, cancellationToken);
         }
 
         return result;

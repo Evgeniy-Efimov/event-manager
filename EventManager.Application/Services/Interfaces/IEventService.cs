@@ -11,6 +11,6 @@ public interface IEventService
     Task<PaginatedResultDto<EventDto>> GetListAsync(EventsRequestDto request, CancellationToken cancellationToken = default);
     Task<EventDto> CreateAsync(CreateEventDto eventDto, CancellationToken cancellationToken = default);
     Task<EventDto> UpdateAsync(UpdateEventDto eventDto, CancellationToken cancellationToken = default);
-    Task<EventDto> UpdateAsync(Event @event, CancellationToken cancellationToken = default);
+    Task<EventDto> UpdateWithoutLockAsync(Event @event, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

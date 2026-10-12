@@ -10,25 +10,24 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddEventManager(this IServiceCollection services)
     {
-        services.AddSingleton<IDateTimeProvider, UtcDateTimeProvider>();
+        return services
+            .AddSingleton<IDateTimeProvider, UtcDateTimeProvider>()
 
-        services.AddSingleton<IRepository<Event>, InMemoryRepository<Event>>();
-        services.AddSingleton<IRepository<Booking>, InMemoryRepository<Booking>>();
-        services.AddInMemoryQueue<Booking>();
+            .AddSingleton<IRepository<Event>, InMemoryRepository<Event>>()
+            .AddSingleton<IRepository<Booking>, InMemoryRepository<Booking>>()
+            .AddInMemoryQueue<Booking>()
+            .AddSingleton<ILockProvider<Event>, SemaphoreLockProvider<Event>>()
 
-        services.AddSingleton<IEventService, EventService>();
-        services.AddSingleton<IBookingService, BookingService>();
+            .AddSingleton<IEventService, EventService>()
+            .AddSingleton<IBookingService, BookingService>()
 
-        services.AddHostedService<BookingBackgroundService>();
-
-        return services;
+            .AddHostedService<BookingBackgroundService>();
     }
 
     private static IServiceCollection AddInMemoryQueue<TEntity>(this IServiceCollection services) where TEntity : BaseEntity
     {
-        services.AddSingleton(Channel.CreateUnbounded<TEntity>());
-        services.AddSingleton<IQueue<TEntity>, InMemoryQueue<TEntity>>();
-
-        return services;
+        return services
+            .AddSingleton(Channel.CreateUnbounded<TEntity>())
+            .AddSingleton<IQueue<TEntity>, InMemoryQueue<TEntity>>();
     }
 }

@@ -27,11 +27,10 @@ public class ExceptionHandler(ILogger<ExceptionHandler> logger) : IExceptionHand
                 Detail = validationException.Message,
                 Instance = httpContext.Request.Path
             },
-            NoAvailableSeatsException noAvailableSeatsException => new ValidationProblemDetails
+            NoAvailableSeatsException noAvailableSeatsException => new ProblemDetails
             {
                 Status = StatusCodes.Status409Conflict,
                 Title = noAvailableSeatsException.Message,
-                Detail = noAvailableSeatsException.Details,
                 Instance = httpContext.Request.Path
             },
             _ => new ProblemDetails

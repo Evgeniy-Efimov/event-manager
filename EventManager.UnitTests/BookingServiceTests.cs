@@ -116,8 +116,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
 
         // Assert
         Assert.NotNull(exception);
-        Assert.Equal("No available seats", exception.Message);
-        Assert.Equal($"No available seats for event '{@event.Id}'", exception.Details);
+        Assert.Equal("No available seats for this event", exception.Message);
         Assert.Equal(0, availableSeatsList.Last());
         Assert.Equal(Enumerable.Range(0, bookingsCount).Reverse(), availableSeatsList);
     }
@@ -133,8 +132,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
 
         // Assert
         Assert.NotNull(exception);
-        Assert.Equal("No available seats", exception.Message);
-        Assert.Equal($"No available seats for event '{eventId}'", exception.Details);
+        Assert.Equal("No available seats for this event", exception.Message);
     }
 
     [Fact]
@@ -174,9 +172,9 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         // Arrange
         var eventId = Guid.Parse("c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f");
         var @event = TestEvents.First(e => e.Id == eventId);
-        var availableSeats = @event.AvailableSeats;
         var createdBookings = new ConcurrentBag<BookingDto>();
-        var bookingService = BookingService;
+        var eventService = fixture.EventService;
+        var bookingService = fixture.GetBookingService(eventService);
         var tasks = Enumerable.Range(0, @event.AvailableSeats)
             .Select(t => Task.Run(async () => {
                 createdBookings.Add(await bookingService.CreateAsync(eventId));
@@ -186,7 +184,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         await Task.WhenAll(tasks);
 
         // Assert
-        Assert.Equal(availableSeats, createdBookings.Count);
+        var updatedEvent = await eventService.GetAsync(eventId);
+        Assert.Equal(0, updatedEvent.AvailableSeats);
         var uniqueIds = createdBookings.Select(r => r.Id).Distinct().ToArray();
         Assert.Equal(createdBookings.Count, uniqueIds.Length);
     }
@@ -201,8 +200,9 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var overbookingCount = 5;
         var createdBookings = new ConcurrentBag<BookingDto>();
         var exceptions = new ConcurrentBag<Exception>();
-        var bookingService = BookingService;
-        var tasks = Enumerable.Range(0, @event.AvailableSeats + overbookingCount)
+        var eventService = fixture.EventService;
+        var bookingService = fixture.GetBookingService(eventService);
+        var tasks = Enumerable.Range(0, availableSeats + overbookingCount)
             .Select(t => Task.Run(async () => {
                 try
                 {
@@ -218,6 +218,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         await Task.WhenAll(tasks);
 
         // Assert
+        var updatedEvent = await eventService.GetAsync(eventId);
+        Assert.Equal(0, updatedEvent.AvailableSeats);
         Assert.Equal(availableSeats, createdBookings.Count);
         Assert.Equal(overbookingCount, exceptions.Count);
         Assert.All(exceptions, (ex) => Assert.IsType<NoAvailableSeatsException>(ex));

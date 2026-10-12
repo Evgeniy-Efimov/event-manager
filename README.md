@@ -197,9 +197,8 @@ Location: http://localhost:5226/api/bookings/d4bbbd9f-80b6-42bf-9c3b-b23cea93170
 
 ```json
 {
-  "title": "No available seats",
+  "title": "No available seats for this event",
   "status": 409,
-  "detail": "No available seats for event 'ce425271-33e0-4fb4-b91c-ca27fc28f66d'",
   "instance": "/api/events/ce425271-33e0-4fb4-b91c-ca27fc28f66d/book"
 }
 ```
@@ -249,12 +248,12 @@ GET http://localhost:5226/api/bookings/d4bbbd9f-80b6-42bf-9c3b-b23cea931709
 Фоновый сервис подтверждения бронирований получает записи пачками, элементы пачки также обрабатываются параллельно  
 Для корректной работы с разделяемыми ресурсами используются примитивы синхронизации
 
-| Примитив                                       | Где используется            | Назначение                                           |
-| ---------------------------------------------- | --------------------------- | ---------------------------------------------------- |
-| ConcurrentDictionary<Guid, TEntity>            | InMemoryRepository<TEntity> | Безопасное чтение и запись из разных потоков         |
-| SemaphoreSlim(1, 1)                            | BookingService              | Атомарная проверка + изменение счетчика мест         |
-| Channel<TEntity>                               | InMemoryQueue<TEntity>      | Потокобезопасная очередь ожидающих бронирований      |
-| Parallel.ForEachAsync + MaxDegreeOfParallelism | BookingBackgroundService    | Ограничение степени параллелизма при обработке пачки |
+| Примитив                                       | Где используется              | Назначение                                           |
+| ---------------------------------------------- | ----------------------------- | ---------------------------------------------------- |
+| ConcurrentDictionary<Guid, TEntity>            | InMemoryRepository<TEntity>   | Безопасное чтение и запись из разных потоков         |
+| SemaphoreSlim(1, 1)                            | BookingService + EventService | Изменение счетчика мест, обновление мероприятия      |
+| Channel<TEntity>                               | InMemoryQueue<TEntity>        | Потокобезопасная очередь ожидающих бронирований      |
+| Parallel.ForEachAsync + MaxDegreeOfParallelism | BookingBackgroundService      | Ограничение степени параллелизма при обработке пачки |
 
 ### Работа с бронированием мероприятий
 
@@ -356,9 +355,8 @@ POST http://localhost:5226/api/events/1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d/book
 
 ```json
 {
-  "title": "No available seats",
+  "title": "No available seats for this event",
   "status": 409,
-  "detail": "No available seats for event '1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d'",
   "instance": "/api/events/1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d/book"
 }
 ```

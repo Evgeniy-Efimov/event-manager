@@ -1,6 +1,6 @@
 ﻿namespace EventManager.Application.Models.Exceptions;
 
-public class NoAvailableSeatsException(Guid eventId) : Exception("No available seats")
+public class NoAvailableSeatsException() : Exception("No available seats for this event")
 {
-    public string Details { get; } = $"No available seats for event '{eventId}'";
+
 }
