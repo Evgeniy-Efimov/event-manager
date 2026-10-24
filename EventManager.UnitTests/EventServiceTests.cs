@@ -12,8 +12,8 @@ namespace EventManager.UnitTests;
 public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<EventServiceFixture>
 {
     private Mock<IDateTimeProvider> DateTimeProviderMock => fixture.DateTimeProviderMock;
-    private IEventService EventService => fixture.EventService;
-    private Event[] TestEvents => EventServiceFixture.TestEvents;
+    private IEventService EventService => fixture.CreateEventService();
+    private static Event[] TestEvents => BaseFixture.TestEvents;
 
     [Fact]
     public async Task Create_NewEvent_ReturnsCreated()
@@ -26,8 +26,8 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
         {
             Title = "New event",
             Description = "About new event",
-            StartAt = EventServiceFixture.Today.AddHours(9),
-            EndAt = EventServiceFixture.Today.AddHours(10),
+            StartAt = BaseFixture.Today.AddHours(9),
+            EndAt = BaseFixture.Today.AddHours(10),
             TotalSeats = 100
         };
 
@@ -89,6 +89,7 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
         // Arrange
         var updatedAt = DateTime.UtcNow;
         DateTimeProviderMock.Setup(p => p.Now).Returns(updatedAt);
+        var eventService = EventService;
 
         var existedEvent = TestEvents.First();
         var updatedEvent = new UpdateEventDto()
@@ -101,7 +102,8 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
         };
 
         // Act
-        var result = await EventService.UpdateAsync(updatedEvent);
+        await eventService.UpdateAsync(updatedEvent);
+        var result = await eventService.GetAsync(updatedEvent.Id);
 
         // Assert
         Assert.NotNull(result);
@@ -125,8 +127,8 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
             Id = Guid.NewGuid(),
             Title = "New title",
             Description = "New description",
-            StartAt = EventServiceFixture.Today.AddHours(9),
-            EndAt = EventServiceFixture.Today.AddHours(10)
+            StartAt = BaseFixture.Today.AddHours(9),
+            EndAt = BaseFixture.Today.AddHours(10)
         };
 
         // Act
@@ -162,8 +164,8 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
     }
 
     [Theory]
-    [InlineData(null, PaginationConstants.DefaultPageSize, EventServiceFixture.TestEventsCount)]
-    [InlineData("", PaginationConstants.DefaultPageSize, EventServiceFixture.TestEventsCount)]
+    [InlineData(null, PaginationConstants.DefaultPageSize, BaseFixture.TestEventsCount)]
+    [InlineData("", PaginationConstants.DefaultPageSize, BaseFixture.TestEventsCount)]
     [InlineData("evening", 2, 2)]
     [InlineData("Some long not existed in test data title", 0, 0)]
     public async Task GetList_FilterByName_ReturnsExpected(string? titleFilter, int expectedCount, int expectedTotalCount)
@@ -183,10 +185,10 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
 
     public static IEnumerable<object?[]> GetList_FilterByDates_ReturnsExpected_TestData() =>
     [
-        [null, null, PaginationConstants.DefaultPageSize, EventServiceFixture.TestEventsCount],
-        [null, EventServiceFixture.Today.AddDays(2), 4, 4],
-        [EventServiceFixture.Today.AddDays(10), null, 1, 1],
-        [EventServiceFixture.Today.AddDays(5), EventServiceFixture.Today.AddDays(7), 2, 2]
+        [null, null, PaginationConstants.DefaultPageSize, BaseFixture.TestEventsCount],
+        [null, BaseFixture.Today.AddDays(2), 4, 4],
+        [BaseFixture.Today.AddDays(10), null, 1, 1],
+        [BaseFixture.Today.AddDays(5), BaseFixture.Today.AddDays(7), 2, 2]
     ];
 
     [Theory]
@@ -218,7 +220,7 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
     [InlineData(1, 1, 1, 1, 1)]
     [InlineData(4, 4, 4, 4, 3)]
     [InlineData(2, 15, 2, 15, 0)]
-    [InlineData(null, 101, PaginationConstants.DefaultPage, PaginationConstants.MaxPageSize, EventServiceFixture.TestEventsCount)]
+    [InlineData(null, 101, PaginationConstants.DefaultPage, PaginationConstants.MaxPageSize, BaseFixture.TestEventsCount)]
     public async Task GetList_WithPagination_ReturnsExpected(int? page, int? pageSize, int expectedPage, int expectedPageSize, int expectedCount)
     {
         // Act
@@ -228,7 +230,7 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
         Assert.Equal(expectedCount, result.Results.Length);
         Assert.Equal(expectedPage, result.Page);
         Assert.Equal(expectedPageSize, result.PageSize);
-        Assert.Equal(EventServiceFixture.TestEventsCount, result.TotalCount);
+        Assert.Equal(BaseFixture.TestEventsCount, result.TotalCount);
     }
 
     public class GetList_FilterWithPagination_ReturnsExpected_TestData : IEnumerable<object[]>
@@ -241,15 +243,15 @@ public class EventServiceTests(EventServiceFixture fixture) : IClassFixture<Even
                 PaginationConstants.DefaultPage,
                 PaginationConstants.DefaultPageSize,
                 PaginationConstants.DefaultPageSize,
-                EventServiceFixture.TestEventsCount
+                BaseFixture.TestEventsCount
             };
             yield return new object[]
             {
                 new EventsRequestDto()
                 {
                     Title = "ING",
-                    From = EventServiceFixture.Today,
-                    To = EventServiceFixture.Today.AddDays(7),
+                    From = BaseFixture.Today,
+                    To = BaseFixture.Today.AddDays(7),
                     Page = 2,
                     PageSize = 3
                 },

@@ -4,19 +4,18 @@ using EventManager.Application.Extensions.Mapping.Events;
 using EventManager.Application.Models.DTO.Booking;
 using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
+using EventManager.Domain.DbContexts;
 using EventManager.Domain.Enums;
 using EventManager.Domain.Models;
-using Microsoft.Extensions.Logging;
 
 namespace EventManager.Application.Services;
 
 public class BookingService(
-    IRepository<Booking> repository,
+    AppDbContext context,
     IQueue<Booking> queue,
     ILockProvider<Event> eventLock,
     IEventService eventService,
-    IDateTimeProvider dateTimeProvider,
-    ILogger<BookingService> logger) : IBookingService
+    IDateTimeProvider dateTimeProvider) : IBookingService
 {
     public async Task<BookingDto> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
@@ -25,7 +24,7 @@ public class BookingService(
 
     private async Task<Booking> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return (await repository.GetAsync(id, cancellationToken))
+        return (await context.Bookings.FindAsync([id], cancellationToken))
             ?? throw new NotFoundException($"Booking '{id}' not found");
     }
 
@@ -59,82 +58,45 @@ public class BookingService(
             if (!@event.TryReserveSeats())
                 throw new NoAvailableSeatsException();
 
-            await eventService.UpdateWithoutLockAsync(@event, cancellationToken);
-
-            try
-            {
-                await repository.CreateAsync(booking, cancellationToken);
-            }
-            catch
-            {
-                await TryRollbackBookingAsync(@event);
-                throw;
-            }
-
-            try
-            {
-                await queue.EnqueueAsync(booking, cancellationToken);
-            }
-            catch
-            {
-                await TryRollbackBookingAsync(@event, booking);
-                throw;
-            }
+            await context.Bookings.AddAsync(booking, cancellationToken);
+            await queue.EnqueueAsync(booking, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
         }
 
         return booking.ToDto();
-    }
-
-    private async Task TryRollbackBookingAsync(Event @event, Booking? booking = null)
-    {
-        try
-        {
-            if (booking != null)
-            {
-                await repository.DeleteAsync(booking.Id);
-            }
-
-            @event.ReleaseSeats();
-            await eventService.UpdateWithoutLockAsync(@event);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to rollback seats for event {EventId}", @event.Id);
-        }
     }
 
     public async Task<BookingDto> ConfirmAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var booking = await GetDomainAsync(id, cancellationToken);
+        booking = Process(booking, (booking) => booking.Confirm(dateTimeProvider.Now));
+        await context.SaveChangesAsync(cancellationToken);
 
-        return await ProcessAsync(booking, (booking) => booking.Confirm(dateTimeProvider.Now), cancellationToken);
+        return booking.ToDto();
     }
 
     public async Task<BookingDto> RejectAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var booking = await GetDomainAsync(id, cancellationToken);
-        var result = await ProcessAsync(booking, (booking) => booking.Reject(dateTimeProvider.Now), cancellationToken);
+        booking = Process(booking, (booking) => booking.Reject(dateTimeProvider.Now));
 
         await using (await eventLock.LockAsync(cancellationToken))
         {
             var @event = await eventService.GetDomainAsync(booking.EventId, cancellationToken);
             @event.ReleaseSeats();
-            await eventService.UpdateWithoutLockAsync(@event, cancellationToken);
+            await context.SaveChangesAsync(cancellationToken);
         }
 
-        return result;
+        return booking.ToDto();
     }
 
-    private async Task<BookingDto> ProcessAsync(Booking booking, Action<Booking> process, CancellationToken cancellationToken = default)
+    private static Booking Process(Booking booking, Action<Booking> process)
     {
         if (booking.Status != BookingStatus.Pending)
             throw new ValidationException($"Can't process booking in status '{booking.Status}'");
 
         process(booking);
-
-        if (!await repository.UpdateAsync(booking, cancellationToken))
-            throw new InvalidOperationException($"Failed to update booking '{booking.Id}'");
-
-        return booking.ToDto();
+        
+        return booking;
     }
 }

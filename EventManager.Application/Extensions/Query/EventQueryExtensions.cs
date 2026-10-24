@@ -5,7 +5,7 @@ namespace EventManager.Application.Extensions.Query;
 
 public static class EventQueryExtensions
 {
-    public static IEnumerable<Event> ApplyFilters(this IEnumerable<Event> query, EventsRequestDto request)
+    public static IQueryable<Event> ApplyFilters(this IQueryable<Event> query, EventsRequestDto request)
     {
         if (!string.IsNullOrEmpty(request.Title))
             query = query.Where(e => e.Title.Contains(request.Title, StringComparison.OrdinalIgnoreCase));
@@ -19,7 +19,7 @@ public static class EventQueryExtensions
         return query;
     }
 
-    public static IEnumerable<Event> ApplySorting(this IEnumerable<Event> query)
+    public static IQueryable<Event> ApplySorting(this IQueryable<Event> query)
     {
         return query.OrderByDescending(c => c.StartAt);
     }

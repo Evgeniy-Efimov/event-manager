@@ -1,6 +1,9 @@
 ﻿using EventManager.Application.BackgroundServices;
 using EventManager.Application.Services.Interfaces;
+using EventManager.Domain.DbContexts;
 using EventManager.Domain.Models;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Channels;
 
@@ -8,18 +11,19 @@ namespace EventManager.Application.Services;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddEventManager(this IServiceCollection services)
+    public static IServiceCollection AddEventManager(this IServiceCollection services, IConfiguration configuration)
     {
         return services
             .AddSingleton<IDateTimeProvider, UtcDateTimeProvider>()
 
-            .AddSingleton<IRepository<Event>, InMemoryRepository<Event>>()
-            .AddSingleton<IRepository<Booking>, InMemoryRepository<Booking>>()
+            .AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(configuration.GetConnectionString("Default")
+                    ?? throw new InvalidOperationException("Connection string 'Default' not found")))
             .AddInMemoryQueue<Booking>()
             .AddSingleton<ILockProvider<Event>, SemaphoreLockProvider<Event>>()
 
-            .AddSingleton<IEventService, EventService>()
-            .AddSingleton<IBookingService, BookingService>()
+            .AddScoped<IEventService, EventService>()
+            .AddScoped<IBookingService, BookingService>()
 
             .AddHostedService<BookingBackgroundService>();
     }

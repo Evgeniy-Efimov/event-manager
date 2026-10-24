@@ -1,6 +1,7 @@
 ﻿using EventManager.Application.Constants;
 using EventManager.Application.Services.Interfaces;
 using EventManager.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -8,7 +9,7 @@ namespace EventManager.Application.BackgroundServices;
 
 public class BookingBackgroundService(
     ILogger<BookingBackgroundService> logger,
-    IBookingService bookingService) : BackgroundService
+    IServiceScopeFactory scopeFactory) : BackgroundService
 {
     private static readonly TimeSpan PollingDelay = TimeSpan.FromSeconds(
         BookingBackgroundServiceConstants.PollingDelaySeconds);
@@ -23,6 +24,8 @@ public class BookingBackgroundService(
         {
             while (!cancellationToken.IsCancellationRequested)
             {
+                using var scope = scopeFactory.CreateScope();
+                var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
                 var batch = await bookingService.GetPendingBookingsAsync(cancellationToken: cancellationToken);
 
                 if (batch.Count > 0)
@@ -54,11 +57,13 @@ public class BookingBackgroundService(
             },
             async (booking, token) =>
             {
-                await ProcessBookingAsync(booking, token);
+                using var scope = scopeFactory.CreateScope();
+                var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
+                await ProcessBookingAsync(booking, bookingService, token);
             });
     }
 
-    private async Task ProcessBookingAsync(Booking booking, CancellationToken cancellationToken)
+    private async Task ProcessBookingAsync(Booking booking, IBookingService bookingService, CancellationToken cancellationToken)
     {
         try
         {
@@ -75,11 +80,11 @@ public class BookingBackgroundService(
         }
         catch (Exception processEx)
         {
-            await RejectFailedBookingAsync(booking.Id, processEx, cancellationToken);
+            await RejectFailedBookingAsync(booking.Id, processEx, bookingService, cancellationToken);
         }
     }
 
-    private async Task RejectFailedBookingAsync(Guid bookingId, Exception processEx, CancellationToken cancellationToken)
+    private async Task RejectFailedBookingAsync(Guid bookingId, Exception processEx, IBookingService bookingService, CancellationToken cancellationToken)
     {
         try
         {

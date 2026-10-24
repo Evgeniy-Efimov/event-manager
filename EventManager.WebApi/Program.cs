@@ -1,6 +1,8 @@
 using EventManager.Application.Services;
+using EventManager.Domain.DbContexts;
 using EventManager.WebApi.Configuration;
 using EventManager.WebApi.Handlers;
+using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,7 +33,7 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
-builder.Services.AddEventManager();
+builder.Services.AddEventManager(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options => options.IncludeXmlComments(Assembly.GetExecutingAssembly()));
@@ -42,6 +44,12 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        context.Database.Migrate();
+    }
+
     app.UseSwagger();
     app.UseSwaggerUI();
     app.UseCors("AllowAll");

@@ -1,6 +1,4 @@
-﻿using EventManager.Domain.Enums;
-
-namespace EventManager.Application.Models.DTO.Booking;
+﻿namespace EventManager.Application.Models.DTO.Booking;
 
 public record BookingDto(
     Guid Id,
