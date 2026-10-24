@@ -1,10 +1,12 @@
-﻿using EventManager.Application.Models.DTO.Booking;
+﻿using EventManager.Application.Constants;
+using EventManager.Application.Models.DTO.Booking;
 using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
 using EventManager.Domain.Enums;
 using EventManager.Domain.Models;
 using EventManager.UnitTests.Fixtures;
 using Moq;
+using System.Collections.Concurrent;
 
 namespace EventManager.UnitTests;
 
@@ -37,6 +39,23 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
+    public async Task Create_ExistedEvent_ReduceAvailableSeats()
+    {
+        // Arrange
+        var @event = TestEvents.First();
+        var availableSeats = @event.AvailableSeats;
+        var eventService = fixture.EventService;
+        var bookingService = fixture.GetBookingService(eventService);
+
+        // Act
+        _ = await bookingService.CreateAsync(@event.Id);
+
+        // Assert
+        var updatedEvent = await eventService.GetAsync(@event.Id);
+        Assert.Equal(--availableSeats, updatedEvent.AvailableSeats);
+    }
+
+    [Fact]
     public async Task Create_OneEventMultipleBooking_ReturnsUniqueIds()
     {
         // Arrange
@@ -53,6 +72,67 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var uniqueIds = results.Select(r => r.Id).Distinct().ToArray();
         Assert.Equal(repetitions, results.Count);
         Assert.Equal(repetitions, uniqueIds.Length);
+    }
+
+    [Fact]
+    public async Task Create_MultipleBooking_QueueReturnsAllPending()
+    {
+        // Arrange
+        var bookingService = fixture.GetBookingService();
+        var bookingsCount = BookingConstants.DefaultPendingBatchSize;
+        var eventId = TestEvents.First().Id;
+        var createdBookings = new List<BookingDto>();
+
+        for (var i = 0; i < bookingsCount; i++)
+            createdBookings.Add(await bookingService.CreateAsync(eventId));
+
+        // Act
+        var results = await bookingService.GetPendingBookingsAsync();
+
+        // Assert
+        Assert.Equal(bookingsCount, results.Count);
+        Assert.Equal(createdBookings.Select(b => b.Id).Order(), results.Select(r => r.Id).Order());
+        Assert.All(results, r => Assert.Equal(BookingStatus.Pending, r.Status));
+    }
+
+    [Fact]
+    public async Task Create_MultipleBooking_ReduceSeatsByOneUntilError()
+    {
+        // Arrange
+        var @event = TestEvents.First();
+        var bookingsCount = @event.AvailableSeats;
+        var eventService = fixture.EventService;
+        var bookingService = fixture.GetBookingService(eventService);
+        var availableSeatsList = new List<int>();
+
+        // Act
+        for (var i = 0; i < bookingsCount; i++)
+        {
+            await bookingService.CreateAsync(@event.Id);
+            availableSeatsList.Add((await eventService.GetAsync(@event.Id)).AvailableSeats);
+        }
+
+        var exception = await Assert.ThrowsAsync<NoAvailableSeatsException>(() => bookingService.CreateAsync(@event.Id));
+
+        // Assert
+        Assert.NotNull(exception);
+        Assert.Equal("No available seats for this event", exception.Message);
+        Assert.Equal(0, availableSeatsList.Last());
+        Assert.Equal(Enumerable.Range(0, bookingsCount).Reverse(), availableSeatsList);
+    }
+
+    [Fact]
+    public async Task Create_NoAvailableSeats_ThrowsNoAvailableSeatsException()
+    {
+        // Arrange
+        var eventId = Guid.Parse("b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e");
+
+        // Act
+        var exception = await Assert.ThrowsAsync<NoAvailableSeatsException>(() => BookingService.CreateAsync(eventId));
+
+        // Assert
+        Assert.NotNull(exception);
+        Assert.Equal("No available seats for this event", exception.Message);
     }
 
     [Fact]
@@ -84,6 +164,65 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         // Assert
         Assert.NotNull(exception);
         Assert.Equal($"Event '{eventId}' not found", exception.Message);
+    }
+
+    [Fact]
+    public async Task Create_ConcurrentBookings_ReturnUniqueIds()
+    {
+        // Arrange
+        var eventId = Guid.Parse("c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f");
+        var @event = TestEvents.First(e => e.Id == eventId);
+        var createdBookings = new ConcurrentBag<BookingDto>();
+        var eventService = fixture.EventService;
+        var bookingService = fixture.GetBookingService(eventService);
+        var tasks = Enumerable.Range(0, @event.AvailableSeats)
+            .Select(t => Task.Run(async () => {
+                createdBookings.Add(await bookingService.CreateAsync(eventId));
+            }));
+
+        // Act
+        await Task.WhenAll(tasks);
+
+        // Assert
+        var updatedEvent = await eventService.GetAsync(eventId);
+        Assert.Equal(0, updatedEvent.AvailableSeats);
+        var uniqueIds = createdBookings.Select(r => r.Id).Distinct().ToArray();
+        Assert.Equal(createdBookings.Count, uniqueIds.Length);
+    }
+
+    [Fact]
+    public async Task Create_ConcurrentBookings_HandleOverflow()
+    {
+        // Arrange
+        var eventId = Guid.Parse("c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f");
+        var @event = TestEvents.First(e => e.Id == eventId);
+        var availableSeats = @event.AvailableSeats;
+        var overbookingCount = 5;
+        var createdBookings = new ConcurrentBag<BookingDto>();
+        var exceptions = new ConcurrentBag<Exception>();
+        var eventService = fixture.EventService;
+        var bookingService = fixture.GetBookingService(eventService);
+        var tasks = Enumerable.Range(0, availableSeats + overbookingCount)
+            .Select(t => Task.Run(async () => {
+                try
+                {
+                    createdBookings.Add(await bookingService.CreateAsync(eventId));
+                }
+                catch (Exception ex)
+                {
+                    exceptions.Add(ex);
+                }
+            }));
+
+        // Act
+        await Task.WhenAll(tasks);
+
+        // Assert
+        var updatedEvent = await eventService.GetAsync(eventId);
+        Assert.Equal(0, updatedEvent.AvailableSeats);
+        Assert.Equal(availableSeats, createdBookings.Count);
+        Assert.Equal(overbookingCount, exceptions.Count);
+        Assert.All(exceptions, (ex) => Assert.IsType<NoAvailableSeatsException>(ex));
     }
 
     [Fact]
@@ -157,27 +296,6 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     }
 
     [Fact]
-    public async Task GetPending_PendingBookingExists_ReturnsExpected()
-    {
-        // Arrange
-        var expectedIds = new List<Guid>()
-        {
-            Guid.Parse("c4d8f1a6-3e7b-4c2d-8a5f-1b9e6d3c7a20"),
-            Guid.Parse("7b2e9d4a-1c5f-4a8b-9e3d-6f0a2b7c4d18"),
-            Guid.Parse("4c7f2a9e-6d1b-4e8a-3f5c-9b2e7d1a4f83"),
-            Guid.Parse("3f8a1c2e-9b4d-4e6a-8f1b-2c7d5e9a0b3f")
-        };
-
-        // Act
-        var result = await BookingService.GetPendingBatchAsync();
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(expectedIds, result.Select(r => r.Id).ToList());
-        Assert.All(result, r => Assert.Equal(BookingStatus.Pending.ToString(), r.Status));
-    }
-
-    [Fact]
     public async Task Confirm_ExistedPendingBooking_ReturnsConfirmed()
     {
         // Arrange
@@ -223,6 +341,44 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         // Assert
         Assert.NotNull(exception);
         Assert.Equal($"Can't process booking in status '{notPendingBooking.Status}'", exception.Message);
+    }
+
+    [Fact]
+    public async Task Reject_ExistedPendingBooking_IncreaseAvailableSeats()
+    {
+        // Arrange
+        var eventId = Guid.Parse("d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a");
+        var bookingId = Guid.Parse("4c7f2a9e-6d1b-4e8a-3f5c-9b2e7d1a4f83");
+        var @event = TestEvents.First(e => e.Id == eventId);
+        var availableSeats = @event.AvailableSeats;
+        var eventService = fixture.EventService;
+        var bookingService = fixture.GetBookingService(eventService);
+
+        // Act
+        var result = await bookingService.RejectAsync(bookingId);
+
+        // Assert
+        var updatedEvent = await eventService.GetAsync(eventId);
+        Assert.Equal(++availableSeats, updatedEvent.AvailableSeats);
+    }
+
+    [Fact]
+    public async Task Reject_NoAvailableSeats_AllowsCreateBooking()
+    {
+        // Arrange
+        var eventId = Guid.Parse("b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e");
+        var bookingId = Guid.Parse("c4d8f1a6-3e7b-4c2d-8a5f-1b9e6d3c7a20");
+        var eventService = fixture.EventService;
+        var bookingService = fixture.GetBookingService(eventService);
+
+        // Act
+        _ = await bookingService.RejectAsync(bookingId);
+        var newBooking = await bookingService.CreateAsync(eventId);
+
+        // Assert
+        var updatedEvent = await eventService.GetAsync(eventId);
+        Assert.Equal(0, updatedEvent.AvailableSeats);
+        Assert.NotEqual(newBooking.Id, bookingId);
     }
 
     [Fact]

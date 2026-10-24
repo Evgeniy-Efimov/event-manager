@@ -13,6 +13,8 @@ public static class EventMappingExtensions
             @event.Description,
             @event.StartAt,
             @event.EndAt,
+            @event.TotalSeats,
+            @event.AvailableSeats,
             @event.CreatedAt,
             @event.UpdatedAt);
     }
