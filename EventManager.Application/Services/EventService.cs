@@ -7,6 +7,7 @@ using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
 using EventManager.Domain.DbContexts;
 using EventManager.Domain.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace EventManager.Application.Services;
 
@@ -28,7 +29,7 @@ public class EventService(
 
     public async Task<PaginatedResultDto<EventDto>> GetListAsync(EventsRequestDto request, CancellationToken cancellationToken = default)
     {
-        var query = context.Events.ApplyFilters(request);
+        var query = context.Events.AsNoTracking().ApplyFilters(request);
         var (page, pageSize, pageQuery) = query.ApplySorting().GetPage(request.Page, request.PageSize);
 
         return new PaginatedResultDto<EventDto>(query.Count(), page, pageSize, pageQuery.ToDtoArray());
