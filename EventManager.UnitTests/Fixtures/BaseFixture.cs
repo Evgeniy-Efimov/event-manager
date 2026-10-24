@@ -2,9 +2,7 @@
 using EventManager.Domain.DbContexts;
 using EventManager.Domain.Enums;
 using EventManager.Domain.Models;
-using EventManager.UnitTests.DbContexts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 namespace EventManager.UnitTests.Fixtures;
@@ -13,6 +11,8 @@ public abstract class BaseFixture
 {
     public Mock<IDateTimeProvider> DateTimeProviderMock { get; } = new();
     protected IDateTimeProvider DateTimeProvider => DateTimeProviderMock.Object;
+    public static readonly DateTime Today = DateTime.Today;
+    public const int TestEventsCount = 15;
 
     public BaseFixture()
     {
@@ -21,25 +21,21 @@ public abstract class BaseFixture
         DateTimeProviderMock.Setup(p => p.Today).Returns(DateTime.UtcNow.Date);
     }
 
-    protected static TestAppDbContext CreateTestAppDbContext(string? dbName = null)
+    public abstract IServiceProvider CreateServiceProvider();
+
+    protected static AppDbContext CreateAppDbContext()
     {
-        dbName ??= Guid.NewGuid().ToString();
-        var context = new TestAppDbContext(new DbContextOptionsBuilder<AppDbContext>().Options, dbName, TestEvents, TestBookings);
+        var context = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options);
         context.Database.EnsureCreated();
+        context.Events.AddRange(TestEvents);
+        context.Bookings.AddRange(TestBookings);
+        context.SaveChanges();
 
         return context;
     }
 
-    public virtual IServiceProvider CreateServiceProvider()
-    {
-        var services = new ServiceCollection();
-        services.AddScoped<AppDbContext>(_ => CreateTestAppDbContext());
-        return services.BuildServiceProvider();
-    }
-
-    public static readonly DateTime Today = DateTime.Today;
-
-    public const int TestEventsCount = 15;
     public static Event[] TestEvents =>
     [
         new (

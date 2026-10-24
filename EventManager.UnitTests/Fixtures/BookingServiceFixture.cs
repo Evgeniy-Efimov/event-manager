@@ -9,20 +9,30 @@ namespace EventManager.UnitTests.Fixtures;
 
 public class BookingServiceFixture : EventServiceFixture
 {
-    public IBookingService CreateBookingService(IEventService? eventService = null, IQueue<Booking>? bookingQueue = null) => new BookingService(
-        CreateTestAppDbContext(),
-        bookingQueue ?? new InMemoryQueue<Booking>(Channel.CreateUnbounded<Booking>()),
-        new SemaphoreLockProvider<Event>(),
-        eventService ?? CreateEventService(),
-        DateTimeProvider);
+    public IBookingService CreateBookingService(
+        IEventService? eventService = null,
+        IQueue<Booking>? bookingQueue = null,
+        AppDbContext? context = null)
+    {
+        return new BookingService(
+            context ?? CreateAppDbContext(),
+            bookingQueue ?? new InMemoryQueue<Booking>(Channel.CreateUnbounded<Booking>()),
+            new SemaphoreLockProvider<Event>(),
+            eventService ?? CreateEventService(),
+            DateTimeProvider);
+    }
 
     public override IServiceProvider CreateServiceProvider()
     {
         var services = new ServiceCollection();
-        var context = CreateTestAppDbContext();
-        var eventService = CreateEventService();
-        var bookingService = CreateBookingService(eventService);
-        services.AddScoped<AppDbContext>(_ => context);
+        var bookingChannel = Channel.CreateUnbounded<Booking>();
+        var bookingQueue = new InMemoryQueue<Booking>(bookingChannel);
+        var context = CreateAppDbContext();
+        var eventService = CreateEventService(context);
+        var bookingService = CreateBookingService(eventService, bookingQueue, context);
+        services.AddSingleton(_ => bookingChannel);
+        services.AddSingleton(_ => bookingQueue);
+        services.AddScoped(_ => context);
         services.AddScoped(_ => eventService);
         services.AddScoped(_ => bookingService);
 
