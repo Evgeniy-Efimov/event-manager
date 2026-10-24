@@ -5,12 +5,13 @@ using EventManager.Application.Models.DTO;
 using EventManager.Application.Models.DTO.Events;
 using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
+using EventManager.Domain.DbContexts;
 using EventManager.Domain.Models;
 
 namespace EventManager.Application.Services;
 
 public class EventService(
-    IRepository<Event> repository,
+    AppDbContext context,
     ILockProvider<Event> eventLock,
     IDateTimeProvider dateTimeProvider) : IEventService
 {
@@ -21,13 +22,13 @@ public class EventService(
 
     public async Task<Event> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return (await repository.GetAsync(id, cancellationToken))
+        return (await context.Events.FindAsync([id], cancellationToken))
             ?? throw new NotFoundException($"Event '{id}' not found");
     }
 
     public async Task<PaginatedResultDto<EventDto>> GetListAsync(EventsRequestDto request, CancellationToken cancellationToken = default)
     {
-        var query = (await repository.GetListAsync(cancellationToken)).ApplyFilters(request);
+        var query = context.Events.ApplyFilters(request);
         var (page, pageSize, pageQuery) = query.ApplySorting().GetPage(request.Page, request.PageSize);
 
         return new PaginatedResultDto<EventDto>(query.Count(), page, pageSize, pageQuery.ToDtoArray());
@@ -36,32 +37,26 @@ public class EventService(
     public async Task<EventDto> CreateAsync(CreateEventDto eventDto, CancellationToken cancellationToken = default)
     {
         var @event = eventDto.ToDomain(dateTimeProvider.Now);
-        await repository.CreateAsync(@event, cancellationToken);
+        await context.Events.AddAsync(@event, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
         return @event.ToDto();
     }
 
-    public async Task<EventDto> UpdateAsync(UpdateEventDto eventDto, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(UpdateEventDto eventDto, CancellationToken cancellationToken = default)
     {
         await using (await eventLock.LockAsync(cancellationToken))
         {
             var existedEvent = await GetDomainAsync(eventDto.Id, cancellationToken);
-
-            return await UpdateWithoutLockAsync(eventDto.ToDomain(existedEvent, dateTimeProvider.Now), cancellationToken);
+            existedEvent.Update(eventDto, dateTimeProvider.Now);
+            await context.SaveChangesAsync(cancellationToken);
         }
-    }
-
-    public async Task<EventDto> UpdateWithoutLockAsync(Event @event, CancellationToken cancellationToken = default)
-    {
-        if (!await repository.UpdateAsync(@event, cancellationToken))
-            throw new NotFoundException($"Event '{@event.Id}' not found");
-
-        return @event.ToDto();
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        if (!await repository.DeleteAsync(id, cancellationToken))
-            throw new NotFoundException($"Event '{id}' not found");
+        var existedEvent = await GetDomainAsync(id, cancellationToken);
+        context.Events.Remove(existedEvent);
+        await context.SaveChangesAsync(cancellationToken);
     }
 }

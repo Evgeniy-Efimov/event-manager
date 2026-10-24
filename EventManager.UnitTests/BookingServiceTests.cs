@@ -5,6 +5,7 @@ using EventManager.Application.Services.Interfaces;
 using EventManager.Domain.Enums;
 using EventManager.Domain.Models;
 using EventManager.UnitTests.Fixtures;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using System.Collections.Concurrent;
 
@@ -13,9 +14,10 @@ namespace EventManager.UnitTests;
 public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<BookingServiceFixture>
 {
     private Mock<IDateTimeProvider> DateTimeProviderMock => fixture.DateTimeProviderMock;
-    private IBookingService BookingService => fixture.GetBookingService();
-    private Event[] TestEvents => EventServiceFixture.TestEvents;
-    private Booking[] TestBookings => BookingServiceFixture.TestBookings;
+    private IBookingService BookingService => fixture.CreateBookingService();
+    private IEventService EventService => fixture.CreateEventService();
+    private static Event[] TestEvents => BaseFixture.TestEvents;
+    private static Booking[] TestBookings => BaseFixture.TestBookings;
     
     [Fact]
     public async Task Create_ExistedEvent_ReturnsPending()
@@ -44,8 +46,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         // Arrange
         var @event = TestEvents.First();
         var availableSeats = @event.AvailableSeats;
-        var eventService = fixture.EventService;
-        var bookingService = fixture.GetBookingService(eventService);
+        var eventService = EventService;
+        var bookingService = fixture.CreateBookingService(eventService);
 
         // Act
         _ = await bookingService.CreateAsync(@event.Id);
@@ -78,7 +80,7 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     public async Task Create_MultipleBooking_QueueReturnsAllPending()
     {
         // Arrange
-        var bookingService = fixture.GetBookingService();
+        var bookingService = fixture.CreateBookingService();
         var bookingsCount = BookingConstants.DefaultPendingBatchSize;
         var eventId = TestEvents.First().Id;
         var createdBookings = new List<BookingDto>();
@@ -101,8 +103,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         // Arrange
         var @event = TestEvents.First();
         var bookingsCount = @event.AvailableSeats;
-        var eventService = fixture.EventService;
-        var bookingService = fixture.GetBookingService(eventService);
+        var eventService = EventService;
+        var bookingService = fixture.CreateBookingService(eventService);
         var availableSeatsList = new List<int>();
 
         // Act
@@ -154,8 +156,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
     {
         // Arrange
         var eventId = TestEvents.First().Id;
-        var eventService = fixture.EventService;
-        var bookingService = fixture.GetBookingService(eventService);
+        var eventService = EventService;
+        var bookingService = fixture.CreateBookingService(eventService);
 
         // Act
         await eventService.DeleteAsync(eventId);
@@ -173,10 +175,12 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var eventId = Guid.Parse("c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f");
         var @event = TestEvents.First(e => e.Id == eventId);
         var createdBookings = new ConcurrentBag<BookingDto>();
-        var eventService = fixture.EventService;
-        var bookingService = fixture.GetBookingService(eventService);
+        var serviceProvider = fixture.CreateServiceProvider();
+        var eventService = serviceProvider.GetRequiredService<IEventService>();
         var tasks = Enumerable.Range(0, @event.AvailableSeats)
             .Select(t => Task.Run(async () => {
+                using var scope = serviceProvider.CreateScope();
+                var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
                 createdBookings.Add(await bookingService.CreateAsync(eventId));
             }));
 
@@ -200,12 +204,14 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var overbookingCount = 5;
         var createdBookings = new ConcurrentBag<BookingDto>();
         var exceptions = new ConcurrentBag<Exception>();
-        var eventService = fixture.EventService;
-        var bookingService = fixture.GetBookingService(eventService);
+        var serviceProvider = fixture.CreateServiceProvider();
+        var eventService = serviceProvider.GetRequiredService<IEventService>();
         var tasks = Enumerable.Range(0, availableSeats + overbookingCount)
             .Select(t => Task.Run(async () => {
                 try
                 {
+                    using var scope = serviceProvider.CreateScope();
+                    var bookingService = scope.ServiceProvider.GetRequiredService<IBookingService>();
                     createdBookings.Add(await bookingService.CreateAsync(eventId));
                 }
                 catch (Exception ex)
@@ -351,8 +357,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         var bookingId = Guid.Parse("4c7f2a9e-6d1b-4e8a-3f5c-9b2e7d1a4f83");
         var @event = TestEvents.First(e => e.Id == eventId);
         var availableSeats = @event.AvailableSeats;
-        var eventService = fixture.EventService;
-        var bookingService = fixture.GetBookingService(eventService);
+        var eventService = EventService;
+        var bookingService = fixture.CreateBookingService(eventService);
 
         // Act
         var result = await bookingService.RejectAsync(bookingId);
@@ -368,8 +374,8 @@ public class BookingServiceTests(BookingServiceFixture fixture) : IClassFixture<
         // Arrange
         var eventId = Guid.Parse("b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e");
         var bookingId = Guid.Parse("c4d8f1a6-3e7b-4c2d-8a5f-1b9e6d3c7a20");
-        var eventService = fixture.EventService;
-        var bookingService = fixture.GetBookingService(eventService);
+        var eventService = EventService;
+        var bookingService = fixture.CreateBookingService(eventService);
 
         // Act
         _ = await bookingService.RejectAsync(bookingId);

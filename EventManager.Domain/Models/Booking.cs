@@ -2,17 +2,27 @@
 
 namespace EventManager.Domain.Models;
 
-public class Booking(
-    Guid eventId,
-    BookingStatus status,
-    DateTime? processedAt = null,
-    DateTime? createdAt = null,
-    DateTime? updatedAt = null,
-    Guid? id = null) : BaseEntity(id, createdAt, updatedAt)
+public class Booking : BaseEntity
 {
-    public Guid EventId { get; set; } = eventId;
-    public BookingStatus Status { get; private set; } = status;
-    public DateTime? ProcessedAt { get; private set; } = processedAt;
+    public Guid EventId { get; set; }
+    public Event Event { get; set; } = null!;
+    public BookingStatus Status { get; private set; }
+    public DateTime? ProcessedAt { get; private set; }
+
+    private Booking() { }
+
+    public Booking(
+        Guid eventId,
+        BookingStatus status,
+        DateTime? processedAt = null,
+        DateTime? createdAt = null,
+        DateTime? updatedAt = null,
+        Guid? id = null) : base(id, createdAt, updatedAt)
+    {
+        EventId = eventId;
+        Status = status;
+        ProcessedAt = processedAt;
+    }
 
     public void Confirm(DateTime processedAt) => ChangeStatus(processedAt, BookingStatus.Confirmed);
 
