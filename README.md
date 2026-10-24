@@ -383,6 +383,7 @@ POST http://localhost:5226/api/events/1b2c3d4e-5f60-4a7b-8c9d-0e1f2a3b4c5d/book
 
 - .NET 10 SDK
 - Git
+- PostgreSQL 14+
 
 ### Шаги для запуска
 
@@ -393,13 +394,26 @@ git clone https://github.com/Evgeniy-Efimov/event-manager.git EventManager
 cd EventManager
 ```
 
-#### 2. Запуск API
+#### 2. Настройка строки подключения
+
+По умолчанию используется строка из `EventManager.WebApi/appsettings.json`:
+
+```json
+"ConnectionStrings": {
+  "Default": "Host=localhost;Port=5432;Database=eventapi;Username=postgres;Password=postgres"
+}
+```
+
+При запуске приложения в окружении `Development` автоматически применяются миграции для создания схемы БД  
+В окружении `Production` миграции нужно применять вручную
+
+#### 3. Запуск API
 
 ```bash
 dotnet run --project EventManager.WebApi
 ```
 
-#### 3. Проверка работы
+#### 4. Проверка работы
 
 Swagger UI будет доступен по адресу http://localhost:5226/swagger/index.html
 
@@ -410,3 +424,5 @@ Swagger UI будет доступен по адресу http://localhost:5226/s
 ```bash
 dotnet test EventManager.UnitTests
 ```
+
+Unit-тесты используют провайдер EF Core InMemory, поэтому для их запуска PostgreSQL и реальная БД не требуются
