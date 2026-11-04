@@ -15,7 +15,7 @@ public class BookingServiceFixture : EventServiceFixture
         AppDbContext? context = null)
     {
         return new BookingService(
-            context ?? CreateAppDbContext(),
+            new BookingRepository(context ?? CreateAppDbContext()),
             bookingQueue ?? new InMemoryQueue<Booking>(Channel.CreateUnbounded<Booking>()),
             new SemaphoreLockProvider<Event>(),
             eventService ?? CreateEventService(),

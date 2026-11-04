@@ -22,6 +22,8 @@ public static class ServiceExtensions
             .AddInMemoryQueue<Booking>()
             .AddSingleton<ILockProvider<Event>, SemaphoreLockProvider<Event>>()
 
+            .AddScoped<IEventRepository, EventRepository>()
+            .AddScoped<IBookingRepository, BookingRepository>()
             .AddScoped<IEventService, EventService>()
             .AddScoped<IBookingService, BookingService>()
 

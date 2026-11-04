@@ -4,14 +4,13 @@ using EventManager.Application.Extensions.Mapping.Events;
 using EventManager.Application.Models.DTO.Booking;
 using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
-using EventManager.Domain.DbContexts;
 using EventManager.Domain.Enums;
 using EventManager.Domain.Models;
 
 namespace EventManager.Application.Services;
 
 public class BookingService(
-    AppDbContext context,
+    IBookingRepository bookingRepository,
     IQueue<Booking> queue,
     ILockProvider<Event> eventLock,
     IEventService eventService,
@@ -22,10 +21,9 @@ public class BookingService(
         return (await GetDomainAsync(id, cancellationToken)).ToDto();
     }
 
-    private async Task<Booking> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
+    private Task<Booking> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return (await context.Bookings.FindAsync([id], cancellationToken))
-            ?? throw new NotFoundException($"Booking '{id}' not found");
+        return bookingRepository.GetAsync(id, cancellationToken);
     }
 
     public async ValueTask<IReadOnlyList<Booking>> GetPendingBookingsAsync(
@@ -58,9 +56,9 @@ public class BookingService(
             if (!@event.TryReserveSeats())
                 throw new NoAvailableSeatsException();
 
-            await context.Bookings.AddAsync(booking, cancellationToken);
+            await bookingRepository.AddAsync(booking, cancellationToken);
             await queue.EnqueueAsync(booking, cancellationToken);
-            await context.SaveChangesAsync(cancellationToken);
+            await bookingRepository.SaveChangesAsync(cancellationToken);
         }
 
         return booking.ToDto();
@@ -70,7 +68,7 @@ public class BookingService(
     {
         var booking = await GetDomainAsync(id, cancellationToken);
         booking = Process(booking, (booking) => booking.Confirm(dateTimeProvider.Now));
-        await context.SaveChangesAsync(cancellationToken);
+        await bookingRepository.SaveChangesAsync(cancellationToken);
 
         return booking.ToDto();
     }
@@ -84,7 +82,7 @@ public class BookingService(
         {
             var @event = await eventService.GetDomainAsync(booking.EventId, cancellationToken);
             @event.ReleaseSeats();
-            await context.SaveChangesAsync(cancellationToken);
+            await bookingRepository.SaveChangesAsync(cancellationToken);
         }
 
         return booking.ToDto();

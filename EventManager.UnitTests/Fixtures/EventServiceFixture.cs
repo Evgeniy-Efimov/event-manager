@@ -11,7 +11,7 @@ public class EventServiceFixture : BaseFixture
     public IEventService CreateEventService(AppDbContext? context = null)
     {
         return new EventService(
-            context ?? CreateAppDbContext(),
+            new EventRepository(context ?? CreateAppDbContext()),
             new SemaphoreLockProvider<Event>(),
             DateTimeProvider);
     }
