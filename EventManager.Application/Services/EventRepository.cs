@@ -13,7 +13,7 @@ public class EventRepository(AppDbContext context) : IEventRepository
 {
     public async Task<Event> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return (await context.Events.FindAsync([id], cancellationToken))
+        return (await context.Events.Include(e => e.Bookings).FirstOrDefaultAsync(e => e.Id == id, cancellationToken))
             ?? throw new NotFoundException($"Event '{id}' not found");
     }
 
