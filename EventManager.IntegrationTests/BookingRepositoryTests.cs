@@ -88,7 +88,7 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Postgr
         var repository = CreateBookingRepository();
 
         // Act
-        var booking = await repository.GetAsync(existedBooking.Id);
+        var booking = await repository.GetAsync(existedBooking.Id, withEvent: true);
         
         // Assert
         Assert.NotNull(booking);

@@ -8,9 +8,14 @@ namespace EventManager.DataAccess.Repositories;
 
 public class BookingRepository(AppDbContext context) : IBookingRepository
 {
-    public async Task<Booking> GetAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Booking> GetAsync(Guid id, bool withEvent = false, CancellationToken cancellationToken = default)
     {
-        return (await context.Bookings.Include(b => b.Event).FirstOrDefaultAsync(b => b.Id == id, cancellationToken))
+        var query = context.Bookings.AsQueryable();
+
+        if (withEvent)
+            query = query.Include(b => b.Event);
+
+        return (await query.FirstOrDefaultAsync(b => b.Id == id, cancellationToken))
             ?? throw new NotFoundException($"Booking '{id}' not found");
     }
 

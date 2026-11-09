@@ -141,7 +141,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
         var repository = CreateEventRepository();
 
         // Act
-        var @event = await repository.GetAsync(existedEvent.Id);
+        var @event = await repository.GetAsync(existedEvent.Id, withBookings: true);
 
         // Assert
         Assert.NotNull(@event);

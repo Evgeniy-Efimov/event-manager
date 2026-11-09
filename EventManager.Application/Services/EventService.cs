@@ -19,7 +19,7 @@ public class EventService(
 
     public Task<Event> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return eventRepository.GetAsync(id, cancellationToken);
+        return eventRepository.GetAsync(id, cancellationToken: cancellationToken);
     }
 
     public async Task<PaginatedResultDto<EventDto>> GetListAsync(EventsRequestDto request, CancellationToken cancellationToken = default)

@@ -24,7 +24,7 @@ public class BookingService(
 
     private Task<Booking> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return bookingRepository.GetAsync(id, cancellationToken);
+        return bookingRepository.GetAsync(id, cancellationToken: cancellationToken);
     }
 
     public async ValueTask<IReadOnlyList<Booking>> GetPendingBookingsAsync(

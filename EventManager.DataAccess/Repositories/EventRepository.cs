@@ -10,9 +10,14 @@ namespace EventManager.DataAccess.Repositories;
 
 public class EventRepository(AppDbContext context) : IEventRepository
 {
-    public async Task<Event> GetAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Event> GetAsync(Guid id, bool withBookings = false, CancellationToken cancellationToken = default)
     {
-        return (await context.Events.Include(e => e.Bookings).FirstOrDefaultAsync(e => e.Id == id, cancellationToken))
+        var query = context.Events.AsQueryable();
+
+        if (withBookings)
+            query = query.Include(e => e.Bookings);
+
+        return (await query.FirstOrDefaultAsync(e => e.Id == id, cancellationToken))
             ?? throw new NotFoundException($"Event '{id}' not found");
     }
 
@@ -32,7 +37,7 @@ public class EventRepository(AppDbContext context) : IEventRepository
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var existedEvent = await GetAsync(id, cancellationToken);
+        var existedEvent = await GetAsync(id, cancellationToken: cancellationToken);
         context.Events.Remove(existedEvent);
     }
 
