@@ -1,4 +1,4 @@
-using EventManager.Application.Services;
+using EventManager.Application.Extensions;
 using EventManager.DataAccess.DbContexts;
 using EventManager.WebApi.Configuration;
 using EventManager.WebApi.Handlers;

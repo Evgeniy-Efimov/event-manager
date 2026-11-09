@@ -1,15 +1,13 @@
 ﻿using EventManager.Application.BackgroundServices;
+using EventManager.Application.Services;
 using EventManager.Application.Services.Interfaces;
-using EventManager.DataAccess.DbContexts;
-using EventManager.DataAccess.Repositories;
-using EventManager.DataAccess.Repositories.Interfaces;
+using EventManager.DataAccess.Extensions;
 using EventManager.Domain.Models;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Channels;
 
-namespace EventManager.Application.Services;
+namespace EventManager.Application.Extensions;
 
 public static class ServiceExtensions
 {
@@ -18,14 +16,10 @@ public static class ServiceExtensions
         return services
             .AddSingleton<IDateTimeProvider, UtcDateTimeProvider>()
 
-            .AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(configuration.GetConnectionString("Default")
-                    ?? throw new InvalidOperationException("Connection string 'Default' not found")))
+            .AddDataAccess(configuration)
             .AddInMemoryQueue<Booking>()
             .AddSingleton<ILockProvider<Event>, SemaphoreLockProvider<Event>>()
 
-            .AddScoped<IEventRepository, EventRepository>()
-            .AddScoped<IBookingRepository, BookingRepository>()
             .AddScoped<IEventService, EventService>()
             .AddScoped<IBookingService, BookingService>()
 

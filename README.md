@@ -411,13 +411,13 @@ cd EventManager
 Создать Initial миграцию:
 
 ```bash
-dotnet ef migrations add InitialCreate --project EventManager.Domain --startup-project EventManager.WebApi
+dotnet ef migrations add InitialCreate --project EventManager.DataAccess --startup-project EventManager.WebApi
 ```
 
 Удалить последнюю миграцию:
 
 ```bash
-dotnet ef migrations remove --project EventManager.Domain --startup-project EventManager.WebApi
+dotnet ef migrations remove --project EventManager.DataAccess --startup-project EventManager.WebApi
 ```
 
 ##### Применение миграций
@@ -426,7 +426,7 @@ dotnet ef migrations remove --project EventManager.Domain --startup-project Even
 В других окружениях миграции необходимо применять вручную:
 
 ```bash
-dotnet ef database update --project EventManager.Domain --startup-project EventManager.WebApi
+dotnet ef database update --project EventManager.DataAccess --startup-project EventManager.WebApi
 ```
 
 #### 3. Запуск API
