@@ -4,6 +4,7 @@ using EventManager.Application.Extensions.Mapping.Events;
 using EventManager.Application.Models.DTO.Booking;
 using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
+using EventManager.DataAccess.Repositories.Interfaces;
 using EventManager.Domain.Enums;
 using EventManager.Domain.Models;
 

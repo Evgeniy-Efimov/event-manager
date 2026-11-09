@@ -1,8 +1,8 @@
-﻿using EventManager.Application.Constants;
-using EventManager.Application.Models.DTO.Events;
-using EventManager.Application.Models.Exceptions;
-using EventManager.Application.Services.Interfaces;
-using EventManager.Domain.DbContexts;
+﻿using EventManager.DataAccess.Constants;
+using EventManager.DataAccess.DbContexts;
+using EventManager.DataAccess.Models.Exceptions;
+using EventManager.DataAccess.Models.Queries;
+using EventManager.DataAccess.Repositories.Interfaces;
 using EventManager.Domain.Models;
 using EventManager.IntegrationTests.Factories;
 using EventManager.IntegrationTests.Fixtures;
@@ -183,7 +183,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
         var repository = CreateEventRepository();
 
         // Act
-        var (totalCount, page, pageSize, results) = await repository.GetListAsync(new EventsRequestDto());
+        var (totalCount, page, pageSize, results) = await repository.GetListAsync(new EventsQuery());
 
         // Assert
         var events = results?.ToArray();
@@ -223,7 +223,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
             yield return new object[]
             {
                 existedEvents,
-                new EventsRequestDto(),
+                new EventsQuery(),
                 PaginationConstants.DefaultPage,
                 PaginationConstants.DefaultPageSize,
                 existedEvents
@@ -237,7 +237,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
             yield return new object[]
             {
                 existedEvents,
-                new EventsRequestDto()
+                new EventsQuery()
                 {
                     Title = titleFilter,
                     From = fromFilter,
@@ -263,7 +263,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     [Theory]
     [ClassData(typeof(GetList_FilterWithPagination_ReturnsExpected_TestData))]
     public async Task GetList_FilterWithPagination_ReturnsExpected(
-        List<Event> existedEvents, EventsRequestDto request,
+        List<Event> existedEvents, EventsQuery query,
         int expectedPage, int expectedPageSize,
         Guid[] expectedIds, int expectedTotalCount)
     {
@@ -274,7 +274,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
         var repository = CreateEventRepository();
 
         // Act
-        var (totalCount, page, pageSize, results) = await repository.GetListAsync(request);
+        var (totalCount, page, pageSize, results) = await repository.GetListAsync(query);
 
         // Assert
         var events = results?.ToArray();

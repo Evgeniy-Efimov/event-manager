@@ -1,6 +1,6 @@
-﻿using EventManager.Application.Models.Exceptions;
-using EventManager.Application.Services.Interfaces;
-using EventManager.Domain.DbContexts;
+﻿using EventManager.DataAccess.DbContexts;
+using EventManager.DataAccess.Models.Exceptions;
+using EventManager.DataAccess.Repositories.Interfaces;
 using EventManager.IntegrationTests.Factories;
 using EventManager.IntegrationTests.Fixtures;
 using EventManager.IntegrationTests.TestData;

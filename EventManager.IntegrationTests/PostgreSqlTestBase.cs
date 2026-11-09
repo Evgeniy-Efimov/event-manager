@@ -1,4 +1,4 @@
-﻿using EventManager.Domain.DbContexts;
+﻿using EventManager.DataAccess.DbContexts;
 using EventManager.IntegrationTests.Fixtures;
 
 namespace EventManager.IntegrationTests;

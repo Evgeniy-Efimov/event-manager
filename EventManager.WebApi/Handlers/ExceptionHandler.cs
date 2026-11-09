@@ -1,4 +1,5 @@
 ﻿using EventManager.Application.Models.Exceptions;
+using EventManager.DataAccess.Models.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 

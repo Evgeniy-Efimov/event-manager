@@ -2,6 +2,7 @@
 using EventManager.Application.Models.DTO;
 using EventManager.Application.Models.DTO.Events;
 using EventManager.Application.Services.Interfaces;
+using EventManager.DataAccess.Repositories.Interfaces;
 using EventManager.Domain.Models;
 
 namespace EventManager.Application.Services;
@@ -23,7 +24,7 @@ public class EventService(
 
     public async Task<PaginatedResultDto<EventDto>> GetListAsync(EventsRequestDto request, CancellationToken cancellationToken = default)
     {
-        var (totalCount, page, pageSize, results) = await eventRepository.GetListAsync(request, cancellationToken);
+        var (totalCount, page, pageSize, results) = await eventRepository.GetListAsync(request.ToQuery(), cancellationToken);
 
         return new PaginatedResultDto<EventDto>(totalCount, page, pageSize, results.ToDtoArray());
     }

@@ -1,4 +1,4 @@
-﻿using EventManager.Domain.DbContexts;
+﻿using EventManager.DataAccess.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Testcontainers.PostgreSql;

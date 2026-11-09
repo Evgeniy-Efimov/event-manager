@@ -2,6 +2,7 @@
 using EventManager.Application.Models.DTO.Booking;
 using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
+using EventManager.DataAccess.Models.Exceptions;
 using EventManager.Domain.Enums;
 using EventManager.Domain.Models;
 using EventManager.UnitTests.Fixtures;

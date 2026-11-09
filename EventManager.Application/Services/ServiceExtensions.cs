@@ -1,6 +1,8 @@
 ﻿using EventManager.Application.BackgroundServices;
 using EventManager.Application.Services.Interfaces;
-using EventManager.Domain.DbContexts;
+using EventManager.DataAccess.DbContexts;
+using EventManager.DataAccess.Repositories;
+using EventManager.DataAccess.Repositories.Interfaces;
 using EventManager.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

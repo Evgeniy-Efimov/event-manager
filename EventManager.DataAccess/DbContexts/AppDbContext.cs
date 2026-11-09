@@ -1,7 +1,7 @@
 ﻿using EventManager.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace EventManager.Domain.DbContexts;
+namespace EventManager.DataAccess.DbContexts;
 
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {

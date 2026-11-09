@@ -1,6 +1,7 @@
 ﻿using EventManager.Application.Services;
 using EventManager.Application.Services.Interfaces;
-using EventManager.Domain.DbContexts;
+using EventManager.DataAccess.DbContexts;
+using EventManager.DataAccess.Repositories;
 using EventManager.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
 

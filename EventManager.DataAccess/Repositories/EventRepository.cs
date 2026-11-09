@@ -1,13 +1,12 @@
-﻿using EventManager.Application.Extensions;
-using EventManager.Application.Extensions.Query;
-using EventManager.Application.Models.DTO.Events;
-using EventManager.Application.Models.Exceptions;
-using EventManager.Application.Services.Interfaces;
-using EventManager.Domain.DbContexts;
+﻿using EventManager.DataAccess.DbContexts;
+using EventManager.DataAccess.Extensions.Queries;
+using EventManager.DataAccess.Models.Exceptions;
+using EventManager.DataAccess.Models.Queries;
+using EventManager.DataAccess.Repositories.Interfaces;
 using EventManager.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace EventManager.Application.Services;
+namespace EventManager.DataAccess.Repositories;
 
 public class EventRepository(AppDbContext context) : IEventRepository
 {
@@ -18,10 +17,10 @@ public class EventRepository(AppDbContext context) : IEventRepository
     }
 
     public async Task<(int TotalCount, int Page, int PageSize, IEnumerable<Event> Results)> GetListAsync(
-        EventsRequestDto request, CancellationToken cancellationToken = default)
+        EventsQuery eventsQuery, CancellationToken cancellationToken = default)
     {
-        var query = context.Events.AsNoTracking().ApplyFilters(request);
-        var (page, pageSize, pageQuery) = query.ApplySorting().GetPage(request.Page, request.PageSize);
+        var query = context.Events.AsNoTracking().ApplyFilters(eventsQuery);
+        var (page, pageSize, pageQuery) = query.ApplySorting().GetPage(eventsQuery.Page, eventsQuery.PageSize);
 
         return (await query.CountAsync(cancellationToken), page, pageSize, await pageQuery.ToListAsync(cancellationToken));
     }
