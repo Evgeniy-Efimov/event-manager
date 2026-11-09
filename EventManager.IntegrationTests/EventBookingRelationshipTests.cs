@@ -10,13 +10,13 @@ public class EventBookingRelationshipTests(PostgreSqlContainerFixture fixture) :
     public async Task DeleteBooking_ExistedEvent_DoesNotDeleteRelatedEvent()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var eventId = Guid.NewGuid();
         var bookingId = Guid.NewGuid();
         arrangeContext.Events.Add(EventDataBuilder.CreateEvent(id: eventId));
         arrangeContext.Bookings.Add(BookingDataBuilder.CreateBooking(id: bookingId, eventId: eventId));
         await arrangeContext.SaveChangesAsync();
-        var actContext = CreateDbContext();
+        using var actContext = CreateDbContext();
 
         // Act
         var existedBooking = await actContext.Bookings.FirstAsync(b => b.Id == bookingId);
@@ -24,7 +24,7 @@ public class EventBookingRelationshipTests(PostgreSqlContainerFixture fixture) :
         await actContext.SaveChangesAsync();
 
         // Assert
-        var assertContext = CreateDbContext();
+        using var assertContext = CreateDbContext();
         var resultBookings = await assertContext.Bookings.ToListAsync();
         Assert.Empty(resultBookings);
         var resultEvent = await assertContext.Events.FirstOrDefaultAsync(e => e.Id == eventId);
@@ -36,13 +36,13 @@ public class EventBookingRelationshipTests(PostgreSqlContainerFixture fixture) :
     public async Task DeleteEvent_ExistedBookings_CascadeDeletesBookings()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var eventId = Guid.NewGuid();
         var bookingId = Guid.NewGuid();
         arrangeContext.Events.Add(EventDataBuilder.CreateEvent(id: eventId));
         arrangeContext.Bookings.Add(BookingDataBuilder.CreateBooking(id: bookingId, eventId: eventId));
         await arrangeContext.SaveChangesAsync();
-        var actContext = CreateDbContext();
+        using var actContext = CreateDbContext();
 
         // Act
         var existedEvent = await actContext.Events.FirstAsync(e => e.Id == eventId);
@@ -50,7 +50,7 @@ public class EventBookingRelationshipTests(PostgreSqlContainerFixture fixture) :
         await actContext.SaveChangesAsync();
 
         // Assert
-        var assertContext = CreateDbContext();
+        using var assertContext = CreateDbContext();
         var resultBookings = await assertContext.Bookings.ToListAsync();
         Assert.Empty(resultBookings);
         var resultEvents = await assertContext.Events.ToListAsync();

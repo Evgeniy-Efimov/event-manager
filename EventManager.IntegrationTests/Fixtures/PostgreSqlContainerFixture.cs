@@ -1,4 +1,5 @@
 ﻿using EventManager.DataAccess.DbContexts;
+using EventManager.DataAccess.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Testcontainers.PostgreSql;
@@ -8,7 +9,6 @@ namespace EventManager.IntegrationTests.Fixtures;
 public class PostgreSqlContainerFixture : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
-        .WithName("integration-tests")
         .WithDatabase("integration-db")
         .Build();
 
@@ -22,22 +22,19 @@ public class PostgreSqlContainerFixture : IAsyncLifetime
         await _postgres.DisposeAsync();
     }
 
-    public AppDbContext CreateContext()
+    public AppDbContext CreateDbContext()
     {
-        var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(_postgres.GetConnectionString())
-            .Options;
-        var context = new AppDbContext(options);
-        context.Database.EnsureCreated();
+        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
+        optionsBuilder.ConfigureDatabase(_postgres.GetConnectionString());
 
-        return context;
+        return new AppDbContext(optionsBuilder.Options);
     }
 
     public async Task ResetDatabaseAsync()
     {
         NpgsqlConnection.ClearAllPools();
-        await using var context = CreateContext();
+        using var context = CreateDbContext();
         await context.Database.EnsureDeletedAsync();
-        await context.Database.EnsureCreatedAsync();
+        await context.Database.MigrateAsync();
     }
 }

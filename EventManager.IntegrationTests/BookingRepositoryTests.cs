@@ -10,26 +10,26 @@ namespace EventManager.IntegrationTests;
 
 public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreSqlTestBase(fixture)
 {
-    private IBookingRepository CreateBookingRepository(AppDbContext? context = null)
-        => ServiceFactory.CreateBookingRepository(context ?? Fixture.CreateContext());
+    private static IBookingRepository CreateBookingRepository(AppDbContext context) => ServiceFactory.CreateBookingRepository(context);
 
     [Fact]
     public async Task Create_NewBooking_Success()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var existedEvent = EventDataBuilder.CreateEvent();
         arrangeContext.Events.Add(existedEvent);
         await arrangeContext.SaveChangesAsync();
         var newBooking = BookingDataBuilder.CreateBooking(eventId: existedEvent.Id);
-        var repository = CreateBookingRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateBookingRepository(repositoryContext);
 
         // Act
         await repository.AddAsync(newBooking);
         await repository.SaveChangesAsync();
 
         // Assert
-        var assertContext = CreateDbContext();
+        using var assertContext = CreateDbContext();
         var createdBooking = await assertContext.Bookings.FirstOrDefaultAsync(b => b.Id == newBooking.Id);
         Assert.NotNull(createdBooking);
         Assert.Equal(newBooking.EventId, createdBooking.EventId);
@@ -39,14 +39,15 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Postgr
     public async Task Create_BookingWithExistedId_ThrowsException()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var existedEvent = EventDataBuilder.CreateEvent();
         var existedBooking = BookingDataBuilder.CreateBooking(eventId: existedEvent.Id);
         arrangeContext.Events.Add(existedEvent);
         arrangeContext.Bookings.Add(existedBooking);
         await arrangeContext.SaveChangesAsync();
         var newBooking = BookingDataBuilder.CreateBooking(id: existedBooking.Id, eventId: existedEvent.Id);
-        var repository = CreateBookingRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateBookingRepository(repositoryContext);
 
         // Act
         await repository.AddAsync(newBooking);
@@ -54,7 +55,7 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Postgr
 
         // Assert
         Assert.NotNull(exception);
-        Assert.Contains("duplicate key value violates unique constraint \"PK_Bookings\"", exception?.InnerException?.Message);
+        Assert.Contains("duplicate key value violates unique constraint \"pk_bookings\"", exception?.InnerException?.Message);
     }
 
     [Fact]
@@ -62,7 +63,8 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Postgr
     {
         // Arrange
         var newBooking = BookingDataBuilder.CreateBooking(eventId: Guid.NewGuid());
-        var repository = CreateBookingRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateBookingRepository(repositoryContext);
 
         // Act
         await repository.AddAsync(newBooking);
@@ -71,7 +73,7 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Postgr
         // Assert
         Assert.NotNull(exception);
         Assert.Contains(
-            "insert or update on table \"Bookings\" violates foreign key constraint \"FK_Bookings_Events_EventId\"",
+            "insert or update on table \"bookings\" violates foreign key constraint \"fk_bookings_events_event_id\"",
             exception?.InnerException?.Message);
     }
 
@@ -79,13 +81,14 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Postgr
     public async Task GetById_ExistedBooking_ReturnsBookingWithEvent()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var existedEvent = EventDataBuilder.CreateEvent();
         var existedBooking = BookingDataBuilder.CreateBooking(eventId: existedEvent.Id);
         arrangeContext.Events.Add(existedEvent);
         arrangeContext.Bookings.Add(existedBooking);
         await arrangeContext.SaveChangesAsync();
-        var repository = CreateBookingRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateBookingRepository(repositoryContext);
 
         // Act
         var booking = await repository.GetAsync(existedBooking.Id, withEvent: true);
@@ -103,7 +106,8 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Postgr
     {
         // Arrange
         var notExistedId = Guid.NewGuid();
-        var repository = CreateBookingRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateBookingRepository(repositoryContext);
 
         // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() => repository.GetAsync(notExistedId));
@@ -117,14 +121,14 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Postgr
     public async Task SaveChanges_UpdateExistedBooking_Success()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var oldEvent = EventDataBuilder.CreateEvent();
         var newEvent = EventDataBuilder.CreateEvent();
         var bookingId = Guid.NewGuid();
         arrangeContext.Events.AddRange([oldEvent, newEvent]);
         arrangeContext.Bookings.Add(BookingDataBuilder.CreateBooking(id: bookingId, eventId: oldEvent.Id));
         await arrangeContext.SaveChangesAsync();
-        var actContext = CreateDbContext();
+        using var actContext = CreateDbContext();
         var repository = CreateBookingRepository(actContext);
 
         // Act
@@ -133,7 +137,7 @@ public class BookingRepositoryTests(PostgreSqlContainerFixture fixture) : Postgr
         await repository.SaveChangesAsync();
 
         // Assert
-        var assertContext = CreateDbContext();
+        using var assertContext = CreateDbContext();
         var updatedBooking = await assertContext.Bookings.FirstOrDefaultAsync(b => b.Id == bookingId);
         Assert.NotNull(updatedBooking);
         Assert.Equal(newEvent.Id, updatedBooking.EventId);

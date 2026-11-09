@@ -14,22 +14,22 @@ namespace EventManager.IntegrationTests;
 
 public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreSqlTestBase(fixture)
 {
-    private IEventRepository CreateEventRepository(AppDbContext? context = null)
-        => ServiceFactory.CreateEventRepository(context ?? Fixture.CreateContext());
+    private static IEventRepository CreateEventRepository(AppDbContext context) => ServiceFactory.CreateEventRepository(context);
     
     [Fact]
     public async Task Create_NewEvent_Success()
     {
         // Arrange
         var newEvent = EventDataBuilder.CreateEvent();
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         await repository.AddAsync(newEvent);
         await repository.SaveChangesAsync();
 
         // Assert
-        var assertContext = CreateDbContext();
+        using var assertContext = CreateDbContext();
         var createdEvent = await assertContext.Events.FirstOrDefaultAsync(e => e.Id == newEvent.Id);
         Assert.NotNull(createdEvent);
         Assert.Equal(newEvent.Title, createdEvent.Title);
@@ -39,12 +39,13 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     public async Task Create_EventWithExistedId_ThrowsException()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var existedEvent = EventDataBuilder.CreateEvent();
         await arrangeContext.Events.AddAsync(existedEvent);
         await arrangeContext.SaveChangesAsync();
         var newEvent = EventDataBuilder.CreateEvent(id: existedEvent.Id);
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         await repository.AddAsync(newEvent);
@@ -52,7 +53,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
 
         // Assert
         Assert.NotNull(exception);
-        Assert.Contains("duplicate key value violates unique constraint \"PK_Events\"", exception?.InnerException?.Message);
+        Assert.Contains("duplicate key value violates unique constraint \"pk_events\"", exception?.InnerException?.Message);
     }
 
     [Fact]
@@ -61,7 +62,8 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
         // Arrange
         var newEvent = EventDataBuilder.CreateEvent();
         newEvent.Title = null!;
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         await repository.AddAsync(newEvent);
@@ -69,7 +71,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
 
         // Assert
         Assert.NotNull(exception);
-        Assert.Contains("null value in column \"Title\" of relation \"Events\" violates not-null constraint", exception?.InnerException?.Message);
+        Assert.Contains("null value in column \"title\" of relation \"events\" violates not-null constraint", exception?.InnerException?.Message);
     }
 
     [Fact]
@@ -77,7 +79,8 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     {
         // Arrange
         var newEvent = EventDataBuilder.CreateEvent(title: RandomDataBuilder.CreateRandomString(101));
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         await repository.AddAsync(newEvent);
@@ -93,7 +96,8 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     {
         // Arrange
         var newEvent = EventDataBuilder.CreateEvent(description: RandomDataBuilder.CreateRandomString(301));
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         await repository.AddAsync(newEvent);
@@ -108,11 +112,12 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     public async Task GetById_ExistedEvent_ReturnsExpected()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var existedEvent = EventDataBuilder.CreateEvent();
         await arrangeContext.Events.AddAsync(existedEvent);
         await arrangeContext.SaveChangesAsync();
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         var @event = await repository.GetAsync(existedEvent.Id);
@@ -127,7 +132,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     public async Task GetById_ExistedEventWithBookings_ReturnsBookingReferences()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var existedEvent = EventDataBuilder.CreateEvent();
         var existedBookings = new List<Booking>()
         {
@@ -138,7 +143,8 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
         await arrangeContext.Events.AddAsync(existedEvent);
         await arrangeContext.Bookings.AddRangeAsync(existedBookings);
         await arrangeContext.SaveChangesAsync();
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         var @event = await repository.GetAsync(existedEvent.Id, withBookings: true);
@@ -155,7 +161,8 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     {
         // Arrange
         var notExistedId = Guid.NewGuid();
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() => repository.GetAsync(notExistedId));
@@ -169,7 +176,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     public async Task GetList_WithoutFilter_ReturnsAllEvents()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var existedEvents = new List<Event>()
         {
             EventDataBuilder.CreateEvent(),
@@ -180,7 +187,8 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
         };
         await arrangeContext.Events.AddRangeAsync(existedEvents);
         await arrangeContext.SaveChangesAsync();
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         var (totalCount, page, pageSize, results) = await repository.GetListAsync(new EventsQuery());
@@ -199,23 +207,14 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     {
         public IEnumerator<object[]> GetEnumerator()
         {
-            var titlePrefix = "testEvent";
-            var titleFilter = $"{titlePrefix}1";
             var now = DateTime.UtcNow;
-            var fromFilter = now.AddDays(10).Date;
-            var toFilter = now.AddDays(20).Date;
-            var page = 2;
-            var pageSize = 3;
             var existedEvents = new List<Event>();
-            var filteredEvents = existedEvents
-                .Where(e => e.Title.Contains(titleFilter, StringComparison.OrdinalIgnoreCase))
-                .Where(e => e.StartAt >= fromFilter)
-                .Where(e => e.EndAt <= toFilter);
 
             for (int i = 0; i < 100; i++)
             {
                 existedEvents.Add(EventDataBuilder.CreateEvent(
-                    title: $"{titlePrefix}{i}",
+                    id: Guid.Parse($"00000000-0000-0000-0000-{i:D12}"),
+                    title: $"testEvent{i}",
                     startAt: now.AddDays(i),
                     endAt: now.AddDays(i).AddMinutes(1)));
             }
@@ -234,26 +233,109 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
                 existedEvents.Count
             };
 
+            var upperTitleFilter = "EVENT2";
+
             yield return new object[]
             {
                 existedEvents,
-                new EventsQuery()
-                {
-                    Title = titleFilter,
-                    From = fromFilter,
-                    To = toFilter,
-                    Page = page,
-                    PageSize = pageSize
-                },
-                page,
-                pageSize,
-                filteredEvents
+                new EventsQuery(Title: upperTitleFilter),
+                PaginationConstants.DefaultPage,
+                PaginationConstants.DefaultPageSize,
+                existedEvents
+                    .Where(e => e.Title.Contains(upperTitleFilter, StringComparison.OrdinalIgnoreCase))
                     .OrderByDescending(e => e.StartAt)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
+                    .Take(PaginationConstants.DefaultPageSize)
                     .Select(e => e.Id)
                     .ToArray(),
-                filteredEvents.Count()
+                existedEvents.Count(e => e.Title.Contains(upperTitleFilter, StringComparison.OrdinalIgnoreCase))
+            };
+            
+            var fromFilter = now.AddDays(50);
+
+            yield return new object[]
+            {
+                existedEvents,
+                new EventsQuery(From: fromFilter),
+                PaginationConstants.DefaultPage,
+                PaginationConstants.DefaultPageSize,
+                existedEvents
+                    .Where(e => e.StartAt >= fromFilter)
+                    .OrderByDescending(e => e.StartAt)
+                    .Take(PaginationConstants.DefaultPageSize)
+                    .Select(e => e.Id)
+                    .ToArray(),
+                existedEvents.Count(e => e.StartAt >= fromFilter)
+            };
+
+            var toFilter = now.AddDays(30);
+
+            yield return new object[]
+            {
+                existedEvents,
+                new EventsQuery(To: toFilter),
+                PaginationConstants.DefaultPage,
+                PaginationConstants.DefaultPageSize,
+                existedEvents
+                    .Where(e => e.EndAt <= toFilter)
+                    .OrderByDescending(e => e.StartAt)
+                    .Take(PaginationConstants.DefaultPageSize)
+                    .Select(e => e.Id)
+                    .ToArray(),
+                existedEvents.Count(e => e.EndAt <= toFilter)
+            };
+
+            var secondPage = 2;
+            var secondPageSize = 20;
+
+            yield return new object[]
+            {
+                existedEvents,
+                new EventsQuery(Page: secondPage, PageSize: secondPageSize),
+                secondPage,
+                secondPageSize,
+                existedEvents
+                    .OrderByDescending(e => e.StartAt)
+                    .Skip((secondPage - 1) * secondPageSize)
+                    .Take(secondPageSize)
+                    .Select(e => e.Id)
+                    .ToArray(),
+                existedEvents.Count
+            };
+
+            var lastIncompletePage = 7;
+            var lastIncompletePageSize = 15;
+
+            yield return new object[]
+            {
+                existedEvents,
+                new EventsQuery(Page: lastIncompletePage, PageSize: lastIncompletePageSize),
+                lastIncompletePage,
+                lastIncompletePageSize,
+                existedEvents
+                    .OrderByDescending(e => e.StartAt)
+                    .Skip((lastIncompletePage - 1) * lastIncompletePageSize)
+                    .Take(lastIncompletePageSize)
+                    .Select(e => e.Id)
+                    .ToArray(),
+                existedEvents.Count
+            };
+
+            var pageBeyondRange = 11;
+            var pageBeyondRangeSize = 10;
+
+            yield return new object[]
+            {
+                existedEvents,
+                new EventsQuery(Page: pageBeyondRange, PageSize: pageBeyondRangeSize),
+                pageBeyondRange,
+                pageBeyondRangeSize,
+                existedEvents
+                    .OrderByDescending(e => e.StartAt)
+                    .Skip((pageBeyondRange - 1) * pageBeyondRangeSize)
+                    .Take(pageBeyondRangeSize)
+                    .Select(e => e.Id)
+                    .ToArray(),
+                existedEvents.Count
             };
         }
 
@@ -268,10 +350,11 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
         Guid[] expectedIds, int expectedTotalCount)
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         await arrangeContext.Events.AddRangeAsync(existedEvents);
         await arrangeContext.SaveChangesAsync();
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         var (totalCount, page, pageSize, results) = await repository.GetListAsync(query);
@@ -279,7 +362,6 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
         // Assert
         var events = results?.ToArray();
         Assert.NotNull(events);
-        Assert.Equal(expectedIds.Length, events.Length);
         Assert.Equal(expectedIds, events.Select(e => e.Id).ToArray());
         Assert.Equal(expectedTotalCount, totalCount);
         Assert.Equal(expectedPage, page);
@@ -290,11 +372,11 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     public async Task SaveChanges_UpdateExistedEvent_Success()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var eventId = Guid.NewGuid();
         await arrangeContext.Events.AddAsync(EventDataBuilder.CreateEvent(id: eventId));
         await arrangeContext.SaveChangesAsync();
-        var actContext = CreateDbContext();
+        using var actContext = CreateDbContext();
         var repository = CreateEventRepository(actContext);
 
         // Act
@@ -304,7 +386,7 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
         await repository.SaveChangesAsync();
 
         // Assert
-        var assertContext = CreateDbContext();
+        using var assertContext = CreateDbContext();
         var updatedEvent = await assertContext.Events.FirstOrDefaultAsync(e => e.Id == eventId);
         Assert.NotNull(updatedEvent);
         Assert.Equal(newTitle, updatedEvent.Title);
@@ -314,18 +396,19 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     public async Task Delete_ExistedEvent_Success()
     {
         // Arrange
-        var arrangeContext = CreateDbContext();
+        using var arrangeContext = CreateDbContext();
         var eventId = Guid.NewGuid();
         await arrangeContext.Events.AddAsync(EventDataBuilder.CreateEvent(id: eventId));
         await arrangeContext.SaveChangesAsync();
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         await repository.DeleteAsync(eventId);
         await repository.SaveChangesAsync();
 
         // Assert
-        var assertContext = CreateDbContext();
+        using var assertContext = CreateDbContext();
         var updatedEvents = await assertContext.Events.ToListAsync();
         Assert.Empty(updatedEvents);
     }
@@ -335,7 +418,8 @@ public class EventRepositoryTests(PostgreSqlContainerFixture fixture) : PostgreS
     {
         // Arrange
         var notExistedId = Guid.NewGuid();
-        var repository = CreateEventRepository();
+        using var repositoryContext = CreateDbContext();
+        var repository = CreateEventRepository(repositoryContext);
 
         // Act
         var exception = await Assert.ThrowsAsync<NotFoundException>(() => repository.DeleteAsync(notExistedId));

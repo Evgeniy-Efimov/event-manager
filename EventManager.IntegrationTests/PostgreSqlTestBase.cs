@@ -7,7 +7,7 @@ namespace EventManager.IntegrationTests;
 public abstract class PostgreSqlTestBase(PostgreSqlContainerFixture fixture) : IAsyncLifetime
 {
     protected PostgreSqlContainerFixture Fixture { get; } = fixture;
-    protected AppDbContext CreateDbContext() => Fixture.CreateContext();
+    protected AppDbContext CreateDbContext() => Fixture.CreateDbContext();
     public Task InitializeAsync() => Fixture.ResetDatabaseAsync();
     public Task DisposeAsync() => Task.CompletedTask;
 }

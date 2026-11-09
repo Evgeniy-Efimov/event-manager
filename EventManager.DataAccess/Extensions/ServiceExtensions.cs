@@ -13,11 +13,16 @@ public static class ServiceExtensions
     {
         return services
             .AddDbContext<AppDbContext>(options => options
-                .UseNpgsql(configuration.GetConnectionString("Default")
-                    ?? throw new InvalidOperationException("Connection string 'Default' not found"))
-                .UseSnakeCaseNamingConvention())
-
+                .ConfigureDatabase(configuration.GetConnectionString("Default")
+                    ?? throw new InvalidOperationException("Connection string 'Default' not found")))
             .AddScoped<IEventRepository, EventRepository>()
             .AddScoped<IBookingRepository, BookingRepository>();
+    }
+
+    public static DbContextOptionsBuilder ConfigureDatabase(this DbContextOptionsBuilder options, string connectionString)
+    {
+        return options
+            .UseNpgsql(connectionString)
+            .UseSnakeCaseNamingConvention();
     }
 }
