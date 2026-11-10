@@ -1,7 +1,7 @@
-﻿using EventManager.Application.Constants;
-using EventManager.Application.Models.DTO.Events;
-using EventManager.Application.Models.Exceptions;
+﻿using EventManager.Application.Models.DTO.Events;
 using EventManager.Application.Services.Interfaces;
+using EventManager.DataAccess.Models.Exceptions;
+using EventManager.Domain.Constants;
 using EventManager.Domain.Models;
 using EventManager.UnitTests.Fixtures;
 using Moq;

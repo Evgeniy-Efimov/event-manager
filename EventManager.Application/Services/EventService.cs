@@ -1,18 +1,14 @@
-﻿using EventManager.Application.Extensions;
-using EventManager.Application.Extensions.Mapping.Events;
-using EventManager.Application.Extensions.Query;
+﻿using EventManager.Application.Extensions.Mapping.Events;
 using EventManager.Application.Models.DTO;
 using EventManager.Application.Models.DTO.Events;
-using EventManager.Application.Models.Exceptions;
 using EventManager.Application.Services.Interfaces;
-using EventManager.Domain.DbContexts;
 using EventManager.Domain.Models;
-using Microsoft.EntityFrameworkCore;
+using EventManager.Domain.Repositories;
 
 namespace EventManager.Application.Services;
 
 public class EventService(
-    AppDbContext context,
+    IEventRepository eventRepository,
     ILockProvider<Event> eventLock,
     IDateTimeProvider dateTimeProvider) : IEventService
 {
@@ -21,25 +17,23 @@ public class EventService(
         return (await GetDomainAsync(id, cancellationToken)).ToDto();
     }
 
-    public async Task<Event> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
+    public Task<Event> GetDomainAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return (await context.Events.FindAsync([id], cancellationToken))
-            ?? throw new NotFoundException($"Event '{id}' not found");
+        return eventRepository.GetAsync(id, cancellationToken: cancellationToken);
     }
 
     public async Task<PaginatedResultDto<EventDto>> GetListAsync(EventsRequestDto request, CancellationToken cancellationToken = default)
     {
-        var query = context.Events.AsNoTracking().ApplyFilters(request);
-        var (page, pageSize, pageQuery) = query.ApplySorting().GetPage(request.Page, request.PageSize);
+        var (totalCount, page, pageSize, results) = await eventRepository.GetListAsync(request.ToQuery(), cancellationToken);
 
-        return new PaginatedResultDto<EventDto>(query.Count(), page, pageSize, pageQuery.ToDtoArray());
+        return new PaginatedResultDto<EventDto>(totalCount, page, pageSize, results.ToDtoArray());
     }
 
     public async Task<EventDto> CreateAsync(CreateEventDto eventDto, CancellationToken cancellationToken = default)
     {
         var @event = eventDto.ToDomain(dateTimeProvider.Now);
-        await context.Events.AddAsync(@event, cancellationToken);
-        await context.SaveChangesAsync(cancellationToken);
+        await eventRepository.AddAsync(@event, cancellationToken);
+        await eventRepository.SaveChangesAsync(cancellationToken);
 
         return @event.ToDto();
     }
@@ -50,14 +44,13 @@ public class EventService(
         {
             var existedEvent = await GetDomainAsync(eventDto.Id, cancellationToken);
             existedEvent.Update(eventDto, dateTimeProvider.Now);
-            await context.SaveChangesAsync(cancellationToken);
+            await eventRepository.SaveChangesAsync(cancellationToken);
         }
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var existedEvent = await GetDomainAsync(id, cancellationToken);
-        context.Events.Remove(existedEvent);
-        await context.SaveChangesAsync(cancellationToken);
+        await eventRepository.DeleteAsync(id, cancellationToken);
+        await eventRepository.SaveChangesAsync(cancellationToken);
     }
 }

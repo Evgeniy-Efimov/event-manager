@@ -404,8 +404,30 @@ cd EventManager
 }
 ```
 
-При запуске приложения в окружении `Development` автоматически применяются миграции для создания схемы БД  
-В окружении `Production` миграции нужно применять вручную
+##### Создание и удаление миграций
+
+Схема базы данных управляется миграциями `EF Core`
+
+Создать Initial миграцию:
+
+```bash
+dotnet ef migrations add InitialCreate --project EventManager.DataAccess --startup-project EventManager.WebApi
+```
+
+Удалить последнюю миграцию:
+
+```bash
+dotnet ef migrations remove --project EventManager.DataAccess --startup-project EventManager.WebApi
+```
+
+##### Применение миграций
+
+В окружении `Development` миграции автоматически применяются при запуске приложения  
+В других окружениях миграции необходимо применять вручную:
+
+```bash
+dotnet ef database update --project EventManager.DataAccess --startup-project EventManager.WebApi
+```
 
 #### 3. Запуск API
 
@@ -426,3 +448,13 @@ dotnet test EventManager.UnitTests
 ```
 
 Unit-тесты используют провайдер EF Core InMemory, поэтому для их запуска PostgreSQL и реальная БД не требуются
+
+#### Запуск интеграционных тестов
+
+```bash
+dotnet test EventManager.IntegrationTests
+```
+
+Интеграционные тесты используют PostgreSQL в Docker-контейнере через `TestContainers`  
+Для их запуска необходим установленный и запущенный Docker  
+При запуске тестов `TestContainers` автоматически создает и запускает контейнер PostgreSQL, а после завершения тестов останавливает и удаляет его

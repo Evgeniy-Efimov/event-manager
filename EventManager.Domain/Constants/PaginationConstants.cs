@@ -1,4 +1,4 @@
-﻿namespace EventManager.Application.Constants;
+﻿namespace EventManager.Domain.Constants;
 
 public static class PaginationConstants
 {

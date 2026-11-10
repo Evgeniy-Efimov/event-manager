@@ -1,5 +1,5 @@
 ﻿using EventManager.Application.Services.Interfaces;
-using EventManager.Domain.DbContexts;
+using EventManager.DataAccess.DbContexts;
 using EventManager.Domain.Enums;
 using EventManager.Domain.Models;
 using Microsoft.EntityFrameworkCore;

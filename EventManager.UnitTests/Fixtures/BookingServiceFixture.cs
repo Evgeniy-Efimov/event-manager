@@ -1,6 +1,7 @@
 ﻿using EventManager.Application.Services;
 using EventManager.Application.Services.Interfaces;
-using EventManager.Domain.DbContexts;
+using EventManager.DataAccess.DbContexts;
+using EventManager.DataAccess.Repositories;
 using EventManager.Domain.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System.Threading.Channels;
@@ -15,7 +16,7 @@ public class BookingServiceFixture : EventServiceFixture
         AppDbContext? context = null)
     {
         return new BookingService(
-            context ?? CreateAppDbContext(),
+            new BookingRepository(context ?? CreateAppDbContext()),
             bookingQueue ?? new InMemoryQueue<Booking>(Channel.CreateUnbounded<Booking>()),
             new SemaphoreLockProvider<Event>(),
             eventService ?? CreateEventService(),
