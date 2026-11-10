@@ -2,8 +2,8 @@
 using EventManager.Application.Models.DTO;
 using EventManager.Application.Models.DTO.Events;
 using EventManager.Application.Services.Interfaces;
-using EventManager.DataAccess.Repositories.Interfaces;
 using EventManager.Domain.Models;
+using EventManager.Domain.Repositories;
 
 namespace EventManager.Application.Services;
 

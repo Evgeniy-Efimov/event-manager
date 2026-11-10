@@ -1,7 +1,7 @@
-﻿using EventManager.DataAccess.Models.Queries;
-using EventManager.Domain.Models;
+﻿using EventManager.Domain.Models;
+using EventManager.Domain.Models.Queries;
 
-namespace EventManager.DataAccess.Repositories.Interfaces;
+namespace EventManager.Domain.Repositories;
 
 public interface IEventRepository
 {

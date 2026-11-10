@@ -1,6 +1,6 @@
-﻿using EventManager.DataAccess.Constants;
+﻿using EventManager.Domain.Constants;
 
-namespace EventManager.DataAccess.Models.Queries;
+namespace EventManager.Domain.Models.Queries;
 
 public record EventsQuery(
     int Page = PaginationConstants.DefaultPage,

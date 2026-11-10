@@ -1,6 +1,6 @@
 ﻿using EventManager.Domain.Models;
 
-namespace EventManager.DataAccess.Repositories.Interfaces;
+namespace EventManager.Domain.Repositories;
 
 public interface IBookingRepository
 {

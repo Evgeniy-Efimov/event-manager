@@ -1,4 +1,4 @@
-﻿using EventManager.DataAccess.Constants;
+﻿using EventManager.Domain.Constants;
 
 namespace EventManager.DataAccess.Extensions.Queries;
 

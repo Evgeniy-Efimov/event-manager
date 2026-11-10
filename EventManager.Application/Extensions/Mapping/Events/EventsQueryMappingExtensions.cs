@@ -1,6 +1,6 @@
 ﻿using EventManager.Application.Models.DTO.Events;
-using EventManager.DataAccess.Constants;
-using EventManager.DataAccess.Models.Queries;
+using EventManager.Domain.Constants;
+using EventManager.Domain.Models.Queries;
 
 namespace EventManager.Application.Extensions.Mapping.Events;
 

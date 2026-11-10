@@ -1,9 +1,9 @@
 ﻿using EventManager.DataAccess.DbContexts;
 using EventManager.DataAccess.Extensions.Queries;
 using EventManager.DataAccess.Models.Exceptions;
-using EventManager.DataAccess.Models.Queries;
-using EventManager.DataAccess.Repositories.Interfaces;
 using EventManager.Domain.Models;
+using EventManager.Domain.Models.Queries;
+using EventManager.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace EventManager.DataAccess.Repositories;

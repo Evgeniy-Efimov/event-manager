@@ -1,6 +1,6 @@
 ﻿using EventManager.DataAccess.DbContexts;
 using EventManager.DataAccess.Repositories;
-using EventManager.DataAccess.Repositories.Interfaces;
+using EventManager.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
